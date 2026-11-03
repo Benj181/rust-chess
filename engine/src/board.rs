@@ -163,11 +163,14 @@ mod tests {
 
     #[test]
     fn testing() {
-        let mut board = Board::empty();
-        let piece = Piece::from_char('N').unwrap();
-        let sq = Square::new(8).unwrap();
-        board.put(piece, sq);
+        let board =
+            Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
         println!("{board}");
-        assert!(board.knights.contains(sq) && board.black.is_empty());
+        println!("{}", board.pieces(PieceKind::Knight));
+        assert!(
+            board
+                .knights
+                .contains(Square::from_algebraic("b1").unwrap())
+        );
     }
 }
