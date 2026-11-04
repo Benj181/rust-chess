@@ -1,15 +1,27 @@
 //! Move generation: produces the moves available in a position.
 
 use crate::{
-    attacks::{KING_ATTACKS, KNIGHT_ATTACKS, bishop_attacks, pawn_attacks, rook_attacks},
+    attacks::{
+        bishop_attacks, king_attacks, knight_attacks, pawn_attacks, queen_attacks, rook_attacks,
+    },
     bitboard::Bitboard,
     board::Board,
-    castling::CastlingRights,
+    castling::Castle,
     direction::Direction,
     moves::{Move, MoveKind, MoveList},
     piece::{Color, PieceKind},
     square::Square,
 };
+
+type AttacksFn = fn(Square, Bitboard) -> Bitboard;
+
+const PIECE_ATTACKS: [(PieceKind, AttacksFn); 5] = [
+    (PieceKind::Knight, |sq, _| knight_attacks(sq)),
+    (PieceKind::Bishop, bishop_attacks),
+    (PieceKind::Rook, rook_attacks),
+    (PieceKind::Queen, queen_attacks),
+    (PieceKind::King, |sq, _| king_attacks(sq)),
+];
 
 fn push_targets(
     from: Square,
@@ -27,44 +39,16 @@ fn push_targets(
     }
 }
 
-fn knight_moves(board: &Board, list: &mut MoveList) {
+fn piece_moves(board: &Board, list: &mut MoveList) {
     let us = board.side_to_move();
-    let ours = board.color_pieces(us);
-    let theirs = board.color_pieces(us.opposite());
-
-    for from in board.pieces(PieceKind::Knight) & ours {
-        if let Some(targets) = KNIGHT_ATTACKS.get(from.as_usize()) {
-            push_targets(from, *targets, ours, theirs, list);
-        }
-    }
-}
-
-fn king_moves(board: &Board, list: &mut MoveList) {
-    let us = board.side_to_move();
-    let ours = board.color_pieces(us);
-    let theirs = board.color_pieces(us.opposite());
-
-    for from in board.pieces(PieceKind::King) & ours {
-        if let Some(targets) = KING_ATTACKS.get(from.as_usize()) {
-            push_targets(from, *targets, ours, theirs, list);
-        }
-    }
-}
-
-fn slider_moves(
-    board: &Board,
-    list: &mut MoveList,
-    kind: PieceKind,
-    attacks_fn: fn(Square, Bitboard) -> Bitboard,
-) {
-    let us = board.side_to_move();
-    let ours = board.color_pieces(us);
-    let theirs = board.color_pieces(us.opposite());
+    let ours = board.occupied_by(us);
+    let theirs = board.occupied_by(us.opposite());
     let occupied = board.occupied();
 
-    for from in board.pieces(kind) & ours {
-        let targets = attacks_fn(from, occupied);
-        push_targets(from, targets, ours, theirs, list);
+    for (kind, attacks) in PIECE_ATTACKS {
+        for from in board.pieces_of(us, kind) {
+            push_targets(from, attacks(from, occupied), ours, theirs, list);
+        }
     }
 }
 
@@ -78,17 +62,17 @@ fn push_pawn_move(
     if promo_rank.contains(to) {
         let kinds = if capture {
             [
-                MoveKind::CapturePromoQ,
-                MoveKind::CapturePromoR,
-                MoveKind::CapturePromoB,
-                MoveKind::CapturePromoN,
+                MoveKind::CapturePromoQueen,
+                MoveKind::CapturePromoRook,
+                MoveKind::CapturePromoBishop,
+                MoveKind::CapturePromoKnight,
             ]
         } else {
             [
-                MoveKind::PromoQ,
-                MoveKind::PromoR,
-                MoveKind::PromoB,
-                MoveKind::PromoN,
+                MoveKind::PromoQueen,
+                MoveKind::PromoRook,
+                MoveKind::PromoBishop,
+                MoveKind::PromoKnight,
             ]
         };
         for kind in kinds {
@@ -106,8 +90,7 @@ fn push_pawn_move(
 
 fn pawn_moves(board: &Board, list: &mut MoveList) {
     let us = board.side_to_move();
-    let ours = board.color_pieces(us);
-    let theirs = board.color_pieces(us.opposite());
+    let theirs = board.occupied_by(us.opposite());
     let empty = !board.occupied();
 
     let (forward, start_rank, promo_rank) = match us {
@@ -115,7 +98,7 @@ fn pawn_moves(board: &Board, list: &mut MoveList) {
         Color::Black => (Direction::South, Bitboard::RANK_7, Bitboard::RANK_1),
     };
 
-    for from in board.pieces(PieceKind::Pawn) & ours {
+    for from in board.pieces_of(us, PieceKind::Pawn) {
         let from_bb = Bitboard::from_square(from);
 
         let single = forward.step(from_bb) & empty;
@@ -141,84 +124,30 @@ fn pawn_moves(board: &Board, list: &mut MoveList) {
     }
 }
 
-struct CastleSide {
-    kind: MoveKind,
-    king_to: u8,
-    must_be_empty: &'static [u8],
-    must_be_safe: &'static [u8],
-}
-
-const KING_SIDE: CastleSide = CastleSide {
-    kind: MoveKind::KingCastle,
-    king_to: 6,
-    must_be_empty: &[5, 6],
-    must_be_safe: &[4, 5, 6],
-};
-
-const QUEEN_SIDE: CastleSide = CastleSide {
-    kind: MoveKind::QueenCastle,
-    king_to: 2,
-    must_be_empty: &[1, 2, 3],
-    must_be_safe: &[4, 3, 2],
-};
-
-fn on_rank(files: &'static [u8], rank: u8) -> impl Iterator<Item = Square> {
-    files
-        .iter()
-        .filter_map(move |&file| Square::from_file_rank(file, rank))
-}
-
 fn castling_moves(board: &Board, list: &mut MoveList) {
     let us = board.side_to_move();
     let them = us.opposite();
-    let (rank, sides) = match us {
-        Color::White => (
-            0,
-            [
-                (CastlingRights::WHITE_KING, &KING_SIDE),
-                (CastlingRights::WHITE_QUEEN, &QUEEN_SIDE),
-            ],
-        ),
-        Color::Black => (
-            7,
-            [
-                (CastlingRights::BLACK_KING, &KING_SIDE),
-                (CastlingRights::BLACK_QUEEN, &QUEEN_SIDE),
-            ],
-        ),
-    };
-
-    let Some(from) = Square::from_file_rank(4, rank) else {
-        return;
-    };
-    if !(board.pieces(PieceKind::King) & board.color_pieces(us)).contains(from) {
-        return;
-    }
-
+    let kings = board.pieces_of(us, PieceKind::King);
     let occupied = board.occupied();
-    for (right, side) in sides {
-        if !board.castling().contains(right)
-            || on_rank(side.must_be_empty, rank).any(|sq| occupied.contains(sq))
-            || on_rank(side.must_be_safe, rank).any(|sq| board.is_square_attacked(sq, them))
+
+    for castle in Castle::for_color(us) {
+        if board.castling().contains(castle.right)
+            && kings.contains(castle.king_from)
+            && (occupied & castle.must_be_empty).is_empty()
+            && !castle
+                .must_be_safe
+                .into_iter()
+                .any(|sq| board.is_square_attacked(sq, them))
         {
-            continue;
-        }
-        if let Some(to) = Square::from_file_rank(side.king_to, rank) {
-            list.push(Move::new(from, to, side.kind));
+            list.push(Move::new(castle.king_from, castle.king_to, castle.kind));
         }
     }
 }
 
 pub fn generate_pseudo_legal(board: &Board, list: &mut MoveList) {
     pawn_moves(board, list);
+    piece_moves(board, list);
     castling_moves(board, list);
-    knight_moves(board, list);
-    king_moves(board, list);
-    slider_moves(board, list, PieceKind::Rook, rook_attacks);
-    slider_moves(board, list, PieceKind::Bishop, bishop_attacks);
-    slider_moves(board, list, PieceKind::Queen, |sq, occupied| {
-        rook_attacks(sq, occupied) | bishop_attacks(sq, occupied)
-    });
 }
 
 pub fn generate_legal(board: &Board, list: &mut MoveList) {

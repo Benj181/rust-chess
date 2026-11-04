@@ -4,6 +4,23 @@ use std::fmt;
 pub struct Square(u8);
 
 impl Square {
+    pub const A1: Self = Self(0);
+    pub const B1: Self = Self(1);
+    pub const C1: Self = Self(2);
+    pub const D1: Self = Self(3);
+    pub const E1: Self = Self(4);
+    pub const F1: Self = Self(5);
+    pub const G1: Self = Self(6);
+    pub const H1: Self = Self(7);
+    pub const A8: Self = Self(56);
+    pub const B8: Self = Self(57);
+    pub const C8: Self = Self(58);
+    pub const D8: Self = Self(59);
+    pub const E8: Self = Self(60);
+    pub const F8: Self = Self(61);
+    pub const G8: Self = Self(62);
+    pub const H8: Self = Self(63);
+
     #[must_use]
     pub const fn new(index: u8) -> Option<Self> {
         if index >= 64 {
@@ -30,15 +47,6 @@ impl Square {
             return None;
         }
         Self::from_file_rank(u8::try_from(file).ok()?, u8::try_from(rank).ok()?)
-    }
-
-    #[must_use]
-    #[allow(
-        clippy::as_conversions,
-        reason = "u8 -> usize never truncates, and From is not callable in const fn"
-    )]
-    pub(crate) const fn as_usize(self) -> usize {
-        self.0 as usize
     }
 
     #[must_use]

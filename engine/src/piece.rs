@@ -21,9 +21,9 @@ impl Color {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PieceKind {
     Pawn,
-    Rook,
     Knight,
     Bishop,
+    Rook,
     Queen,
     King,
 }
@@ -31,13 +31,14 @@ pub enum PieceKind {
 impl PieceKind {
     pub const ALL: [Self; 6] = [
         Self::Pawn,
-        Self::Rook,
         Self::Knight,
         Self::Bishop,
+        Self::Rook,
         Self::Queen,
         Self::King,
     ];
 }
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Piece {
     color: Color,
@@ -59,9 +60,9 @@ impl Piece {
         };
         let kind = match fen_char.to_ascii_lowercase() {
             'p' => PieceKind::Pawn,
-            'r' => PieceKind::Rook,
             'n' => PieceKind::Knight,
             'b' => PieceKind::Bishop,
+            'r' => PieceKind::Rook,
             'q' => PieceKind::Queen,
             'k' => PieceKind::King,
             _ => return None,
@@ -73,9 +74,9 @@ impl Piece {
     pub const fn to_char(self) -> char {
         let c = match self.kind {
             PieceKind::Pawn => 'p',
-            PieceKind::Rook => 'r',
             PieceKind::Knight => 'n',
             PieceKind::Bishop => 'b',
+            PieceKind::Rook => 'r',
             PieceKind::Queen => 'q',
             PieceKind::King => 'k',
         };

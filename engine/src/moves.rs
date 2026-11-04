@@ -1,6 +1,8 @@
 use crate::{piece::PieceKind, square::Square};
 use std::fmt;
 
+const MAX_MOVES: usize = 256;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MoveKind {
     Quiet,
@@ -9,14 +11,14 @@ pub enum MoveKind {
     QueenCastle,
     Capture,
     EnPassant,
-    PromoN,
-    PromoB,
-    PromoR,
-    PromoQ,
-    CapturePromoN,
-    CapturePromoB,
-    CapturePromoR,
-    CapturePromoQ,
+    PromoKnight,
+    PromoBishop,
+    PromoRook,
+    PromoQueen,
+    CapturePromoKnight,
+    CapturePromoBishop,
+    CapturePromoRook,
+    CapturePromoQueen,
 }
 
 macro_rules! move_kind_bits {
@@ -47,14 +49,14 @@ move_kind_bits! {
     QueenCastle = 3,
     Capture = 4,
     EnPassant = 5,
-    PromoN = 6,
-    PromoB = 7,
-    PromoR = 8,
-    PromoQ = 9,
-    CapturePromoN = 10,
-    CapturePromoB = 11,
-    CapturePromoR = 12,
-    CapturePromoQ = 13,
+    PromoKnight = 6,
+    PromoBishop = 7,
+    PromoRook = 8,
+    PromoQueen = 9,
+    CapturePromoKnight = 10,
+    CapturePromoBishop = 11,
+    CapturePromoRook = 12,
+    CapturePromoQueen = 13,
 }
 
 impl MoveKind {
@@ -64,20 +66,20 @@ impl MoveKind {
             self,
             Self::Capture
                 | Self::EnPassant
-                | Self::CapturePromoN
-                | Self::CapturePromoB
-                | Self::CapturePromoR
-                | Self::CapturePromoQ
+                | Self::CapturePromoKnight
+                | Self::CapturePromoBishop
+                | Self::CapturePromoRook
+                | Self::CapturePromoQueen
         )
     }
 
     #[must_use]
     pub const fn promotion(self) -> Option<PieceKind> {
         match self {
-            Self::PromoN | Self::CapturePromoN => Some(PieceKind::Knight),
-            Self::PromoB | Self::CapturePromoB => Some(PieceKind::Bishop),
-            Self::PromoR | Self::CapturePromoR => Some(PieceKind::Rook),
-            Self::PromoQ | Self::CapturePromoQ => Some(PieceKind::Queen),
+            Self::PromoKnight | Self::CapturePromoKnight => Some(PieceKind::Knight),
+            Self::PromoBishop | Self::CapturePromoBishop => Some(PieceKind::Bishop),
+            Self::PromoRook | Self::CapturePromoRook => Some(PieceKind::Rook),
+            Self::PromoQueen | Self::CapturePromoQueen => Some(PieceKind::Queen),
             Self::Quiet
             | Self::DoublePush
             | Self::KingCastle
@@ -146,7 +148,7 @@ impl Move {
 
 #[derive(Clone)]
 pub struct MoveList {
-    moves: [Move; 256],
+    moves: [Move; MAX_MOVES],
     len: usize,
 }
 
@@ -154,7 +156,7 @@ impl MoveList {
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            moves: [Move::NULL; 256],
+            moves: [Move::NULL; MAX_MOVES],
             len: 0,
         }
     }

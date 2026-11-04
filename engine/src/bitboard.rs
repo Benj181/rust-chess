@@ -11,20 +11,21 @@ impl Bitboard {
     pub const EMPTY: Self = Self(0);
 
     pub const FILE_A: Self = Self(0x0101_0101_0101_0101);
-    pub const FILE_B: Self = Self(Self::FILE_A.0 << 1);
-    pub const FILE_G: Self = Self(Self::FILE_A.0 << 6);
     pub const FILE_H: Self = Self(Self::FILE_A.0 << 7);
 
     pub const RANK_1: Self = Self(0xFF);
     pub const RANK_2: Self = Self(Self::RANK_1.0 << 8);
-    pub const RANK_3: Self = Self(Self::RANK_1.0 << 16);
-    pub const RANK_6: Self = Self(Self::RANK_1.0 << 40);
     pub const RANK_7: Self = Self(Self::RANK_1.0 << 48);
     pub const RANK_8: Self = Self(Self::RANK_1.0 << 56);
 
     #[must_use]
     pub const fn from_square(sq: Square) -> Self {
         Self(1 << sq.index())
+    }
+
+    #[must_use]
+    pub const fn with(self, sq: Square) -> Self {
+        Self(self.0 | Self::from_square(sq).0)
     }
 
     #[must_use]
@@ -89,11 +90,6 @@ impl Bitboard {
     #[must_use]
     pub(crate) const fn south_west(self) -> Self {
         self.south().west()
-    }
-
-    #[must_use]
-    pub const fn pop_count(self) -> u32 {
-        self.0.count_ones()
     }
 }
 
