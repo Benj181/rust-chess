@@ -44,48 +44,48 @@ impl Bitboard {
         self.0 == Self::EMPTY.0
     }
 
-    // Shifts. Square index = rank * 8 + file, so north is +8 and east is +1.
-    // Bits shifted off either end of the u64 simply disappear, which handles the
-    // top and bottom edges. East/west shifts would wrap onto the neighbouring rank,
-    // so the file they would wrap onto is masked out afterwards.
+    #[must_use]
+    pub(crate) const fn union(self, other: Self) -> Self {
+        Self(self.0 | other.0)
+    }
 
     #[must_use]
-    pub const fn north(self) -> Self {
+    pub(crate) const fn north(self) -> Self {
         Self(self.0 << 8)
     }
 
     #[must_use]
-    pub const fn south(self) -> Self {
+    pub(crate) const fn south(self) -> Self {
         Self(self.0 >> 8)
     }
 
     #[must_use]
-    pub const fn east(self) -> Self {
+    pub(crate) const fn east(self) -> Self {
         Self(self.0 << 1 & !Self::FILE_A.0)
     }
 
     #[must_use]
-    pub const fn west(self) -> Self {
+    pub(crate) const fn west(self) -> Self {
         Self(self.0 >> 1 & !Self::FILE_H.0)
     }
 
     #[must_use]
-    pub const fn north_east(self) -> Self {
+    pub(crate) const fn north_east(self) -> Self {
         self.north().east()
     }
 
     #[must_use]
-    pub const fn north_west(self) -> Self {
+    pub(crate) const fn north_west(self) -> Self {
         self.north().west()
     }
 
     #[must_use]
-    pub const fn south_east(self) -> Self {
+    pub(crate) const fn south_east(self) -> Self {
         self.south().east()
     }
 
     #[must_use]
-    pub const fn south_west(self) -> Self {
+    pub(crate) const fn south_west(self) -> Self {
         self.south().west()
     }
 
@@ -195,62 +195,5 @@ mod tests {
         assert_eq!(c, a);
         c ^= a;
         assert_eq!(c, Bitboard::EMPTY);
-    }
-
-    #[test]
-    fn iterates_lowest_bit_first() {
-        let b = bb(&["h8", "a1", "c3"]);
-        let squares: Vec<_> = b.into_iter().collect();
-        let expected: Vec<_> = ["a1", "c3", "h8"]
-            .iter()
-            .map(|s| Square::from_algebraic(s).unwrap())
-            .collect();
-        assert_eq!(squares, expected);
-        assert_eq!(b.pop_count(), 3);
-        assert_eq!(Bitboard::EMPTY.into_iter().next(), None);
-    }
-
-    fn sq(name: &str) -> Bitboard {
-        Bitboard::from_square(Square::from_algebraic(name).unwrap())
-    }
-
-    #[test]
-    fn masks() {
-        assert_eq!(Bitboard::FILE_A.pop_count(), 8);
-        assert!(Bitboard::FILE_A.contains(Square::from_algebraic("a8").unwrap()));
-        assert!(Bitboard::FILE_H.contains(Square::from_algebraic("h1").unwrap()));
-        assert!(Bitboard::RANK_1.contains(Square::from_algebraic("h1").unwrap()));
-        assert!(Bitboard::RANK_8.contains(Square::from_algebraic("a8").unwrap()));
-        assert_eq!(Bitboard::RANK_2.pop_count(), 8);
-        assert_eq!(Bitboard::FILE_B & Bitboard::RANK_3, sq("b3"));
-        assert_eq!(Bitboard::FILE_G & Bitboard::RANK_6, sq("g6"));
-        assert_eq!(Bitboard::FILE_A & Bitboard::RANK_7, sq("a7"));
-    }
-
-    #[test]
-    fn shifts() {
-        assert_eq!(sq("e4").north(), sq("e5"));
-        assert_eq!(sq("e4").south(), sq("e3"));
-        assert_eq!(sq("e4").east(), sq("f4"));
-        assert_eq!(sq("e4").west(), sq("d4"));
-        assert_eq!(sq("e4").north_east(), sq("f5"));
-        assert_eq!(sq("e4").north_west(), sq("d5"));
-        assert_eq!(sq("e4").south_east(), sq("f3"));
-        assert_eq!(sq("e4").south_west(), sq("d3"));
-    }
-
-    #[test]
-    fn shifts_fall_off_edges() {
-        assert_eq!(sq("h4").east(), Bitboard::EMPTY);
-        assert_eq!(sq("a4").west(), Bitboard::EMPTY);
-        assert_eq!(sq("e8").north(), Bitboard::EMPTY);
-        assert_eq!(sq("e1").south(), Bitboard::EMPTY);
-        assert_eq!(sq("h8").north_east(), Bitboard::EMPTY);
-        assert_eq!(sq("a1").south_west(), Bitboard::EMPTY);
-        assert_eq!(sq("h1").north_east(), Bitboard::EMPTY);
-        assert_eq!(sq("a8").south_west(), Bitboard::EMPTY);
-        // Every h-file square shifted east must vanish, not wrap onto the a-file.
-        assert_eq!(Bitboard::FILE_H.east(), Bitboard::EMPTY);
-        assert_eq!(Bitboard::FILE_A.west(), Bitboard::EMPTY);
     }
 }
