@@ -1,5 +1,4 @@
-use crate::piece::PieceKind;
-use crate::square::Square;
+use crate::{piece::PieceKind, square::Square};
 use std::fmt;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -181,6 +180,10 @@ impl MoveList {
     pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, Move> {
+        self.as_slice().iter()
+    }
 }
 
 impl Default for MoveList {
@@ -192,5 +195,14 @@ impl Default for MoveList {
 impl fmt::Debug for MoveList {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.as_slice()).finish()
+    }
+}
+
+impl<'a> IntoIterator for &'a MoveList {
+    type Item = &'a Move;
+    type IntoIter = std::slice::Iter<'a, Move>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }

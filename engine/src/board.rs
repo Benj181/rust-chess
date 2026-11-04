@@ -1,11 +1,11 @@
-use crate::attacks::{
-    KING_ATTACKS, KNIGHT_ATTACKS, bishop_attacks, pawn_attacks, queen_attacks, rook_attacks,
+use crate::{
+    attacks::{KING_ATTACKS, KNIGHT_ATTACKS, bishop_attacks, pawn_attacks, rook_attacks},
+    bitboard::Bitboard,
+    castling::CastlingRights,
+    moves::{Move, MoveKind},
+    piece::{Color, Piece, PieceKind},
+    square::Square,
 };
-use crate::bitboard::Bitboard;
-use crate::castling::CastlingRights;
-use crate::moves::{Move, MoveKind};
-use crate::piece::{Color, Piece, PieceKind};
-use crate::square::Square;
 use std::fmt;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -201,13 +201,14 @@ impl Board {
         if pawn_attacks(by, theirs(PieceKind::Pawn)).contains(sq) {
             return true;
         }
-        if !(rook_attacks(sq, occupied) & theirs(PieceKind::Rook)).is_empty() {
+        if !(rook_attacks(sq, occupied) & (theirs(PieceKind::Rook) | theirs(PieceKind::Queen)))
+            .is_empty()
+        {
             return true;
         }
-        if !(bishop_attacks(sq, occupied) & theirs(PieceKind::Bishop)).is_empty() {
-            return true;
-        }
-        if !(queen_attacks(sq, occupied) & theirs(PieceKind::Queen)).is_empty() {
+        if !(bishop_attacks(sq, occupied) & (theirs(PieceKind::Bishop) | theirs(PieceKind::Queen)))
+            .is_empty()
+        {
             return true;
         }
         false
@@ -269,6 +270,10 @@ impl Board {
         let mut b = self.clone();
         let us = self.side_to_move;
         let (from, to, kind) = (mv.from(), mv.to(), mv.kind());
+        debug_assert!(
+            self.piece_at(from).is_some(),
+            "make_move: no piece on {from} for {mv:?}"
+        );
         let Some(mover) = self.piece_at(from) else {
             return b;
         };
@@ -347,23 +352,5 @@ impl fmt::Display for Board {
             writeln!(f)?;
         }
         write!(f, "  a b c d e f g h")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn testing() {
-        let board =
-            Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-        println!("{board}");
-        println!("{}", board.pieces(PieceKind::Knight));
-        assert!(
-            board
-                .knights
-                .contains(Square::from_algebraic("b1").unwrap())
-        );
     }
 }

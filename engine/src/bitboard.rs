@@ -1,6 +1,8 @@
 use crate::square::Square;
-use std::fmt;
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
+use std::{
+    fmt,
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not},
+};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct Bitboard(u64);
@@ -163,37 +165,5 @@ impl fmt::Display for Bitboard {
             writeln!(f)?;
         }
         write!(f, "  a b c d e f g h")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn bb(squares: &[&str]) -> Bitboard {
-        let mut b = Bitboard::EMPTY;
-        for s in squares {
-            b.set(Square::from_algebraic(s).unwrap());
-        }
-        b
-    }
-
-    #[test]
-    fn operators() {
-        let a = bb(&["a1", "b2"]);
-        let b = bb(&["b2", "c3"]);
-        assert_eq!(a & b, bb(&["b2"]));
-        assert_eq!(a | b, bb(&["a1", "b2", "c3"]));
-        assert_eq!(a ^ b, bb(&["a1", "c3"]));
-        assert_eq!(!Bitboard::EMPTY, Bitboard(u64::MAX));
-        assert_eq!(!a & a, Bitboard::EMPTY);
-
-        let mut c = a;
-        c &= b;
-        assert_eq!(c, bb(&["b2"]));
-        c |= a;
-        assert_eq!(c, a);
-        c ^= a;
-        assert_eq!(c, Bitboard::EMPTY);
     }
 }

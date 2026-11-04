@@ -1,5 +1,4 @@
-use crate::bitboard::Bitboard;
-use crate::square::Square;
+use crate::{bitboard::Bitboard, square::Square};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Direction {
@@ -14,17 +13,6 @@ pub enum Direction {
 }
 
 impl Direction {
-    pub const ALL: [Self; 8] = [
-        Self::North,
-        Self::South,
-        Self::East,
-        Self::West,
-        Self::NorthEast,
-        Self::NorthWest,
-        Self::SouthEast,
-        Self::SouthWest,
-    ];
-
     pub const ROOK: [Self; 4] = [Self::North, Self::South, Self::East, Self::West];
     pub const BISHOP: [Self; 4] = [
         Self::NorthEast,

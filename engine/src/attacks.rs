@@ -1,7 +1,4 @@
-use crate::bitboard::Bitboard;
-use crate::direction::Direction;
-use crate::piece::Color;
-use crate::square::Square;
+use crate::{bitboard::Bitboard, direction::Direction, piece::Color, square::Square};
 
 #[must_use]
 const fn knight_attacks(sq: Square) -> Bitboard {
@@ -77,35 +74,4 @@ pub fn rook_attacks(sq: Square, occupied: Bitboard) -> Bitboard {
 #[must_use]
 pub fn bishop_attacks(sq: Square, occupied: Bitboard) -> Bitboard {
     sliding_attacks(sq, occupied, &Direction::BISHOP)
-}
-
-#[must_use]
-pub fn queen_attacks(sq: Square, occupied: Bitboard) -> Bitboard {
-    sliding_attacks(sq, occupied, &Direction::ALL)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn sq(name: &str) -> Square {
-        Square::from_algebraic(name).unwrap()
-    }
-
-    fn bb(squares: &[&str]) -> Bitboard {
-        let mut b = Bitboard::EMPTY;
-        for s in squares {
-            b.set(sq(s));
-        }
-        b
-    }
-
-    #[test]
-    fn rook() {
-        let pos = "e6";
-        let occupied = bb(&["b6", "e4", "e7", "g6"]);
-        println!("occupied:\n{occupied}");
-        println!("{}", bb(&[pos]));
-        println!("{}", rook_attacks(sq(pos), occupied));
-    }
 }

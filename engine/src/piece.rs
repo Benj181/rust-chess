@@ -16,14 +16,6 @@ impl Color {
             Self::Black => Self::White,
         }
     }
-
-    #[must_use]
-    pub const fn index(self) -> usize {
-        match self {
-            Self::White => 0,
-            Self::Black => 1,
-        }
-    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
