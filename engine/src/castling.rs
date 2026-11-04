@@ -1,15 +1,30 @@
+//! Castling rights, and the squares involved in each of the four castling
+//! moves, shared by move generation and
+//! [`Board::make_move`](crate::board::Board::make_move).
+
 use crate::{bitboard::Bitboard, moves::MoveKind, piece::Color, square::Square};
 
+/// Which of the four castlings are still allowed, as a set of flags.
+///
+/// Build sets with [`insert`](Self::insert) and query them with
+/// [`contains`](Self::contains).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct CastlingRights(u8);
 
 impl CastlingRights {
+    /// No castling rights.
     pub const NONE: Self = Self(0);
+    /// White may castle king side.
     pub const WHITE_KING: Self = Self(0b0001);
+    /// White may castle queen side.
     pub const WHITE_QUEEN: Self = Self(0b0010);
+    /// Black may castle king side.
     pub const BLACK_KING: Self = Self(0b0100);
+    /// Black may castle queen side.
     pub const BLACK_QUEEN: Self = Self(0b1000);
 
+    /// Parses the castling field of a FEN string: `-`, or any combination of
+    /// `K`, `Q`, `k` and `q`. Returns `None` for any other character.
     #[must_use]
     pub fn from_fen(s: &str) -> Option<Self> {
         let mut rights = Self::NONE;
@@ -29,15 +44,18 @@ impl CastlingRights {
         Some(rights)
     }
 
+    /// Whether every right in `right` is present.
     #[must_use]
     pub const fn contains(self, right: Self) -> bool {
         self.0 & right.0 == right.0
     }
 
+    /// Adds the rights in `right`.
     pub const fn insert(&mut self, right: Self) {
         self.0 |= right.0;
     }
 
+    /// Removes the rights in `right`.
     pub const fn remove(&mut self, right: Self) {
         self.0 &= !right.0;
     }

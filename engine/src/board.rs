@@ -1,3 +1,5 @@
+//! [`Board`]: a complete chess position.
+
 use crate::{
     attacks::{bishop_attacks, king_attacks, knight_attacks, pawn_attacks, rook_attacks},
     bitboard::Bitboard,
@@ -8,6 +10,12 @@ use crate::{
 };
 use std::fmt;
 
+/// A chess position: piece placement plus everything else a FEN string
+/// records, which is the side to move, castling rights, the en passant square
+/// and both move clocks.
+///
+/// Pieces are stored as six bitboards by kind and two by color. A board never
+/// changes from the outside: [`make_move`](Self::make_move) returns a new one.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Board {
     pawns: Bitboard,
@@ -26,6 +34,22 @@ pub struct Board {
 }
 
 impl Board {
+    /// Parses a position from FEN.
+    ///
+    /// The two move clocks may be left off, and then default to 0 and 1. Returns
+    /// `None` for malformed input, such as the wrong number of ranks, a rank that
+    /// does not fill eight files, an unknown piece letter or a field that does not
+    /// parse.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use engine::board::Board;
+    ///
+    /// assert!(Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").is_some());
+    /// assert!(Board::from_fen("4k3/8/8/8/8/8/8/4K3 w - -").is_some());
+    /// assert!(Board::from_fen("4k3/8/8/8 w - -").is_none());
+    /// ```
     #[must_use]
     pub fn from_fen(fen: &str) -> Option<Self> {
         let mut board = Self::empty();
@@ -73,6 +97,7 @@ impl Board {
         Some(board)
     }
 
+    /// A board with no pieces, white to move, no castling rights and the clocks at 0 and 1.
     #[must_use]
     pub const fn empty() -> Self {
         Self {
@@ -92,26 +117,34 @@ impl Board {
         }
     }
 
+    /// Every occupied square, of either color.
     #[must_use]
     pub const fn occupied(&self) -> Bitboard {
         self.white.union(self.black)
     }
 
+    /// The color whose turn it is.
     #[must_use]
     pub const fn side_to_move(&self) -> Color {
         self.side_to_move
     }
 
+    /// The castling rights both sides still have.
     #[must_use]
     pub const fn castling(&self) -> CastlingRights {
         self.castling
     }
 
+    /// The square a pawn could capture onto en passant.
+    ///
+    /// It is set right after a double pawn push, even if no enemy pawn can
+    /// actually make the capture.
     #[must_use]
     pub const fn en_passant(&self) -> Option<Square> {
         self.en_passant
     }
 
+    /// The square of `color`'s king, or `None` if that side has no king.
     #[must_use]
     pub fn king_square(&self, color: Color) -> Option<Square> {
         self.pieces_of(color, PieceKind::King).into_iter().next()
@@ -129,6 +162,7 @@ impl Board {
         }
     }
 
+    /// Every piece of `kind`, of both colors.
     #[must_use]
     pub const fn pieces(&self, kind: PieceKind) -> Bitboard {
         match kind {
@@ -141,6 +175,7 @@ impl Board {
         }
     }
 
+    /// Every square occupied by a piece of `color`.
     #[must_use]
     pub const fn occupied_by(&self, color: Color) -> Bitboard {
         match color {
@@ -149,6 +184,7 @@ impl Board {
         }
     }
 
+    /// The pieces of `kind` that belong to `color`.
     #[must_use]
     pub fn pieces_of(&self, color: Color, kind: PieceKind) -> Bitboard {
         self.pieces(kind) & self.occupied_by(color)
@@ -170,6 +206,7 @@ impl Board {
         }
     }
 
+    /// The piece on `sq`, or `None` if it is empty.
     #[must_use]
     pub fn piece_at(&self, sq: Square) -> Option<Piece> {
         let color = Color::ALL
@@ -182,6 +219,10 @@ impl Board {
         Some(Piece::new(color, kind))
     }
 
+    /// Whether any piece of color `by` attacks `sq`.
+    ///
+    /// Pieces of either color block sliding attacks. Whatever stands on `sq`
+    /// itself does not matter.
     #[must_use]
     pub fn is_square_attacked(&self, sq: Square, by: Color) -> bool {
         let attackers = |kind| self.pieces_of(by, kind);
@@ -238,6 +279,14 @@ impl Board {
         }
     }
 
+    /// Plays `mv` and returns the resulting position, leaving `self` unchanged.
+    ///
+    /// Besides moving pieces, this updates castling rights, the en passant
+    /// square, both clocks and the side to move.
+    ///
+    /// The move is trusted, not checked for legality, so pass moves from
+    /// [`generate_legal`](crate::movegen::generate_legal). In debug builds a move
+    /// from an empty square, or of the wrong color, panics.
     #[must_use]
     pub fn make_move(&self, mv: Move) -> Self {
         let mut next = self.clone();

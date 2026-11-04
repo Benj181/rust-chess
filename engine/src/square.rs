@@ -1,5 +1,12 @@
+//! [`Square`]: one of the 64 squares of the board.
+
 use std::fmt;
 
+/// One of the 64 squares, always valid.
+///
+/// Squares are numbered a1 = 0, b1 = 1, …, h1 = 7, a2 = 8, …, h8 = 63, so
+/// the index is `rank * 8 + file` with both counted from 0. A square displays
+/// in algebraic notation, like `e4`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Square(u8);
 
@@ -21,6 +28,7 @@ impl Square {
     pub const G8: Self = Self(62);
     pub const H8: Self = Self(63);
 
+    /// The square with `index`, or `None` if `index` is 64 or more.
     #[must_use]
     pub const fn new(index: u8) -> Option<Self> {
         if index >= 64 {
@@ -30,6 +38,8 @@ impl Square {
         Some(Self(index))
     }
 
+    /// The square on `file` and `rank`, both counted from 0 (the a-file and
+    /// rank 1 are 0). Returns `None` if either is 8 or more.
     #[must_use]
     pub fn from_file_rank(file: u8, rank: u8) -> Option<Self> {
         if file >= 8 {
@@ -38,6 +48,7 @@ impl Square {
         Self::new(rank.checked_mul(8)?.checked_add(file)?)
     }
 
+    /// Parses algebraic notation such as `e4`. Returns `None` for anything else.
     #[must_use]
     pub fn from_algebraic(s: &str) -> Option<Self> {
         let mut chars = s.chars();
@@ -54,16 +65,19 @@ impl Square {
         Self(index & 63)
     }
 
+    /// The index of the square, from 0 (a1) to 63 (h8).
     #[must_use]
     pub const fn index(self) -> u8 {
         self.0
     }
 
+    /// The file, from 0 (the a-file) to 7 (the h-file).
     #[must_use]
     pub const fn file(self) -> u8 {
         self.0 % 8
     }
 
+    /// The rank, from 0 (rank 1) to 7 (rank 8).
     #[must_use]
     pub const fn rank(self) -> u8 {
         self.0 / 8

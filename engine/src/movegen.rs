@@ -1,4 +1,8 @@
 //! Move generation: produces the moves available in a position.
+//!
+//! Generation runs in two stages. [`generate_pseudo_legal`] produces every
+//! move that follows the movement rules, and [`generate_legal`] keeps only
+//! those that do not leave the mover's own king attacked.
 
 use crate::{
     attacks::{
@@ -144,12 +148,19 @@ fn castling_moves(board: &Board, list: &mut MoveList) {
     }
 }
 
+/// Appends every pseudo-legal move to `list`: moves that follow the movement
+/// rules but may leave the mover's own king attacked.
+///
+/// Castling moves are already fully checked, including that the king does not
+/// pass through an attacked square.
 pub fn generate_pseudo_legal(board: &Board, list: &mut MoveList) {
     pawn_moves(board, list);
     piece_moves(board, list);
     castling_moves(board, list);
 }
 
+/// Appends every legal move to `list`: the pseudo-legal moves that do not
+/// leave the mover's own king attacked.
 pub fn generate_legal(board: &Board, list: &mut MoveList) {
     let us = board.side_to_move();
     let mut pseudo = MoveList::new();
@@ -166,6 +177,19 @@ pub fn generate_legal(board: &Board, list: &mut MoveList) {
     }
 }
 
+/// Counts the positions reachable from `board` in exactly `depth` moves.
+///
+/// Comparing the count with published numbers is the standard check that
+/// move generation and [`Board::make_move`] are correct.
+///
+/// # Examples
+///
+/// ```
+/// use engine::{board::Board, movegen::perft};
+///
+/// let start = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+/// assert_eq!(perft(&start, 2), 400);
+/// ```
 #[must_use]
 pub fn perft(board: &Board, depth: u32) -> u64 {
     if depth == 0 {

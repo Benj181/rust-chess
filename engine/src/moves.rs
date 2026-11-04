@@ -1,8 +1,15 @@
+//! Moves: [`MoveKind`], the compact [`Move`] and the fixed-capacity [`MoveList`].
+
 use crate::{piece::PieceKind, square::Square};
 use std::fmt;
 
 const MAX_MOVES: usize = 256;
 
+/// What kind of move a [`Move`] is.
+///
+/// The kind tells [`Board::make_move`](crate::board::Board::make_move) about
+/// everything beyond moving one piece: captures, the en passant square, the
+/// castling rook and promotions.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MoveKind {
     Quiet,
@@ -24,6 +31,7 @@ pub enum MoveKind {
 macro_rules! move_kind_bits {
     ($($variant:ident = $bits:literal),+ $(,)?) => {
         impl MoveKind {
+            /// The 4-bit code stored inside a [`Move`].
             #[must_use]
             pub const fn to_bits(self) -> u8 {
                 match self {
@@ -31,6 +39,7 @@ macro_rules! move_kind_bits {
                 }
             }
 
+            /// The kind for a 4-bit code, or `None` if no kind uses that code.
             #[must_use]
             pub const fn from_bits(bits: u8) -> Option<Self> {
                 match bits {
@@ -60,6 +69,7 @@ move_kind_bits! {
 }
 
 impl MoveKind {
+    /// Whether the move captures a piece, en passant included.
     #[must_use]
     pub const fn is_capture(self) -> bool {
         matches!(
@@ -73,6 +83,7 @@ impl MoveKind {
         )
     }
 
+    /// The piece a pawn promotes to, or `None` if the move is not a promotion.
     #[must_use]
     pub const fn promotion(self) -> Option<PieceKind> {
         match self {
@@ -90,11 +101,13 @@ impl MoveKind {
     }
 }
 
-/*
-bits  0..=5   from square   (0..63, 6 bits)
-bits  6..=11  to square     (0..63, 6 bits)
-bits 12..=15  kind          (0..15, 4 bits)
-*/
+/// A move packed into 16 bits.
+///
+/// | Bits  | Field         |
+/// |-------|---------------|
+/// | 0–5   | from square   |
+/// | 6–11  | to square     |
+/// | 12–15 | [`MoveKind`]  |
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Move(u16);
 
@@ -117,6 +130,7 @@ impl Move {
 
     const NULL: Self = Self(0);
 
+    /// Packs a move of `kind` from `from` to `to`.
     #[must_use]
     pub fn new(from: Square, to: Square, kind: MoveKind) -> Self {
         let from = u16::from(from.index()) & Self::FROM_MASK;
@@ -125,16 +139,19 @@ impl Move {
         Self(from | to | kind)
     }
 
+    /// The square the piece moves from.
     #[must_use]
     pub fn from(self) -> Square {
         Square::from_index_masked(self.field(0, Self::FROM_MASK))
     }
 
+    /// The square the piece moves to.
     #[must_use]
     pub fn to(self) -> Square {
         Square::from_index_masked(self.field(Self::TO_SHIFT, Self::TO_MASK))
     }
 
+    /// The kind of move.
     #[must_use]
     pub fn kind(self) -> MoveKind {
         MoveKind::from_bits(self.field(Self::KIND_SHIFT, Self::KIND_MASK))
@@ -146,6 +163,10 @@ impl Move {
     }
 }
 
+/// A list of moves stored inline, so generating moves never allocates.
+///
+/// It holds up to 256 moves, more than the 218 of any legal position. A move
+/// pushed past that is dropped.
 #[derive(Clone)]
 pub struct MoveList {
     moves: [Move; MAX_MOVES],
@@ -153,6 +174,7 @@ pub struct MoveList {
 }
 
 impl MoveList {
+    /// An empty list.
     #[must_use]
     pub const fn new() -> Self {
         Self {
@@ -161,6 +183,7 @@ impl MoveList {
         }
     }
 
+    /// Appends `mv`, or drops it if the list is full.
     pub fn push(&mut self, mv: Move) {
         if let Some(slot) = self.moves.get_mut(self.len) {
             *slot = mv;
@@ -168,21 +191,25 @@ impl MoveList {
         }
     }
 
+    /// The moves pushed so far, in order.
     #[must_use]
     pub fn as_slice(&self) -> &[Move] {
         self.moves.get(..self.len).unwrap_or(&[])
     }
 
+    /// The number of moves in the list.
     #[must_use]
     pub const fn len(&self) -> usize {
         self.len
     }
 
+    /// Whether the list has no moves.
     #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
 
+    /// Iterates over the moves in the order they were pushed.
     pub fn iter(&self) -> std::slice::Iter<'_, Move> {
         self.as_slice().iter()
     }
