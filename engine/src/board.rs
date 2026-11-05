@@ -97,6 +97,51 @@ impl Board {
         Some(board)
     }
 
+    /// Formats the position as a FEN string, the inverse of
+    /// [`from_fen`](Self::from_fen).
+    ///
+    /// ```
+    /// use engine::board::Board;
+    ///
+    /// let fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+    /// assert_eq!(Board::from_fen(fen).unwrap().to_fen(), fen);
+    /// ```
+    #[must_use]
+    pub fn to_fen(&self) -> String {
+        let mut placement = String::new();
+        for rank in (0..8).rev() {
+            let mut empty = 0;
+            for file in 0..8 {
+                match Square::from_file_rank(file, rank).and_then(|sq| self.piece_at(sq)) {
+                    Some(piece) => {
+                        push_empty(&mut placement, empty);
+                        empty = 0;
+                        placement.push(piece.to_char());
+                    }
+                    None => empty = empty.saturating_add(1),
+                }
+            }
+            push_empty(&mut placement, empty);
+            if rank > 0 {
+                placement.push('/');
+            }
+        }
+
+        let side = match self.side_to_move {
+            Color::White => 'w',
+            Color::Black => 'b',
+        };
+        let en_passant = self
+            .en_passant
+            .map_or_else(|| "-".to_owned(), |sq| sq.to_string());
+        format!(
+            "{placement} {side} {} {en_passant} {} {}",
+            self.castling.to_fen(),
+            self.halfmove_clock,
+            self.fullmove_number
+        )
+    }
+
     /// A board with no pieces, white to move, no castling rights and the clocks at 0 and 1.
     #[must_use]
     pub const fn empty() -> Self {
@@ -133,6 +178,12 @@ impl Board {
     #[must_use]
     pub const fn castling(&self) -> CastlingRights {
         self.castling
+    }
+
+    /// Half move clock.
+    #[must_use]
+    pub const fn halfmove_clock(&self) -> u16 {
+        self.halfmove_clock
     }
 
     /// The square a pawn could capture onto en passant.
@@ -368,12 +419,60 @@ impl Board {
         next
     }
 
+    /// Whether neither side has enough material to checkmate: only kings, plus
+    /// at most one knight or bishop, or any number of bishops all on squares
+    /// of the same color.
+    #[must_use]
+    pub fn insufficient_material(&self) -> bool {
+        if !(self.pawns | self.rooks | self.queens).is_empty() {
+            return false;
+        }
+        if (self.knights | self.bishops).into_iter().count() <= 1 {
+            return true;
+        }
+        if !self.knights.is_empty() {
+            return false;
+        }
+        let mut colors = self
+            .bishops
+            .into_iter()
+            .map(|sq| (sq.file() ^ sq.rank()) & 1);
+        let first = colors.next();
+        colors.all(|color| Some(color) == first)
+    }
+
+    /// Whether `self` and `other` are the same position for repetition: the
+    /// same pieces, side to move, castling rights and en passant square. The
+    /// move clocks are ignored.
+    #[must_use]
+    pub fn same_position(&self, other: &Self) -> bool {
+        self.pawns == other.pawns
+            && self.knights == other.knights
+            && self.bishops == other.bishops
+            && self.rooks == other.rooks
+            && self.queens == other.queens
+            && self.kings == other.kings
+            && self.white == other.white
+            && self.black == other.black
+            && self.side_to_move == other.side_to_move
+            && self.castling == other.castling
+            && self.en_passant == other.en_passant
+    }
+
     /// Whether the side to move is in check.
     #[must_use]
     pub fn in_check(&self) -> bool {
         let me = self.side_to_move();
         self.king_square(me)
             .is_some_and(|king| self.is_square_attacked(king, me.opposite()))
+    }
+}
+
+fn push_empty(fen: &mut String, count: u32) {
+    if count > 0
+        && let Some(digit) = char::from_digit(count, 10)
+    {
+        fen.push(digit);
     }
 }
 

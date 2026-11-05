@@ -4,7 +4,8 @@ use crate::{
     board::Board,
     movegen::generate_legal,
     moves::{Move, MoveList},
-    piece::Color,
+    piece::{Color, PieceKind},
+    square::Square,
 };
 
 /// How a game ended.
@@ -46,6 +47,8 @@ pub enum MoveError {
     GameOver,
     /// The move is not legal in the current position.
     IllegalMove,
+    /// The UCI parsing failed due to invalid notation.
+    InvalidNotation,
 }
 
 /// A game in progress or finished: the current position, every earlier
@@ -70,12 +73,14 @@ impl Game {
     #[must_use]
     pub fn from_fen(fen: &str) -> Option<Self> {
         let board = Board::from_fen(fen)?;
-        Some(Self {
-            result: Self::detect_result(&board),
+        let mut g = Self {
             board,
             history: Vec::new(),
             moves: Vec::new(),
-        })
+            result: None,
+        };
+        g.result = g.detect_result();
+        Some(g)
     }
 
     /// The current position.
@@ -97,21 +102,36 @@ impl Game {
     }
 
     #[must_use]
-    fn detect_result(board: &Board) -> Option<GameResult> {
+    fn detect_result(&self) -> Option<GameResult> {
         let mut list = MoveList::new();
-        generate_legal(board, &mut list);
+        generate_legal(&self.board, &mut list);
         if list.is_empty() {
-            if board.in_check() {
-                Some(GameResult::Win {
-                    winner: board.side_to_move().opposite(),
+            return Some(if self.board.in_check() {
+                GameResult::Win {
+                    winner: self.board.side_to_move().opposite(),
                     reason: WinReason::Checkmate,
-                })
+                }
             } else {
-                Some(GameResult::Draw(DrawReason::Stalemate))
-            }
-        } else {
-            None
+                GameResult::Draw(DrawReason::Stalemate)
+            });
         }
+        if self.board.halfmove_clock() >= 100 {
+            return Some(GameResult::Draw(DrawReason::FiftyMoveRule));
+        }
+        if self.repetitions() >= 2 {
+            return Some(GameResult::Draw(DrawReason::ThreefoldRepetition));
+        }
+        if self.board.insufficient_material() {
+            return Some(GameResult::Draw(DrawReason::InsufficientMaterial));
+        }
+        None
+    }
+
+    fn repetitions(&self) -> usize {
+        self.history
+            .iter()
+            .filter(|earlier| earlier.same_position(&self.board))
+            .count()
     }
 
     /// The moves that can be played now, or an empty list once the game has
@@ -142,8 +162,75 @@ impl Game {
         let next = self.board.make_move(mv);
         self.history.push(std::mem::replace(&mut self.board, next));
         self.moves.push(mv);
-        self.result = Self::detect_result(&self.board);
+        self.result = self.detect_result();
 
+        Ok(())
+    }
+
+    fn parse_uci(s: &str) -> Option<(Square, Square, Option<PieceKind>)> {
+        let from = Square::from_algebraic(s.get(..2)?)?;
+        let to = Square::from_algebraic(s.get(2..4)?)?;
+        let promo = match s.get(4..)? {
+            "" => None,
+            "n" => Some(PieceKind::Knight),
+            "b" => Some(PieceKind::Bishop),
+            "r" => Some(PieceKind::Rook),
+            "q" => Some(PieceKind::Queen),
+            _ => return None,
+        };
+        Some((from, to, promo))
+    }
+
+    /// Plays a move given in UCI notation, such as `e2e4`, or `e7e8q` for a
+    /// promotion.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MoveError::GameOver`] if the game has ended,
+    /// [`MoveError::InvalidNotation`] if `s` is not valid UCI notation, or
+    /// [`MoveError::IllegalMove`] if the move is not legal in the current
+    /// position.
+    pub fn play_uci(&mut self, s: &str) -> Result<(), MoveError> {
+        if self.result.is_some() {
+            return Err(MoveError::GameOver);
+        }
+        let (from, to, promo) = Self::parse_uci(s).ok_or(MoveError::InvalidNotation)?;
+        let mv = self
+            .legal_moves()
+            .iter()
+            .find(|mv| mv.from() == from && mv.to() == to && mv.kind().promotion() == promo)
+            .copied()
+            .ok_or(MoveError::IllegalMove)?;
+
+        self.play(mv)
+    }
+
+    /// Ends the game with `loser` resigning, so the other side wins.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MoveError::GameOver`] if the game has already ended.
+    pub const fn resign(&mut self, loser: Color) -> Result<(), MoveError> {
+        self.finish(GameResult::Win {
+            winner: loser.opposite(),
+            reason: WinReason::Resignation,
+        })
+    }
+
+    /// Ends the game as a draw both players agreed to.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MoveError::GameOver`] if the game has already ended.
+    pub const fn agree_draw(&mut self) -> Result<(), MoveError> {
+        self.finish(GameResult::Draw(DrawReason::Agreement))
+    }
+
+    const fn finish(&mut self, result: GameResult) -> Result<(), MoveError> {
+        if self.result.is_some() {
+            return Err(MoveError::GameOver);
+        }
+        self.result = Some(result);
         Ok(())
     }
 
@@ -153,7 +240,7 @@ impl Game {
         if let Some(previous) = self.history.pop() {
             self.board = previous;
             self.moves.pop();
-            self.result = Self::detect_result(&self.board);
+            self.result = self.detect_result();
         }
     }
 }

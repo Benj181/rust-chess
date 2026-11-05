@@ -44,6 +44,27 @@ impl CastlingRights {
         Some(rights)
     }
 
+    /// Formats the rights as the castling field of a FEN string, in the order
+    /// `KQkq`, or `-` if no side may castle.
+    #[must_use]
+    pub fn to_fen(self) -> String {
+        let field: String = [
+            (Self::WHITE_KING, 'K'),
+            (Self::WHITE_QUEEN, 'Q'),
+            (Self::BLACK_KING, 'k'),
+            (Self::BLACK_QUEEN, 'q'),
+        ]
+        .into_iter()
+        .filter(|&(right, _)| self.contains(right))
+        .map(|(_, symbol)| symbol)
+        .collect();
+        if field.is_empty() {
+            "-".to_owned()
+        } else {
+            field
+        }
+    }
+
     /// Whether every right in `right` is present.
     #[must_use]
     pub const fn contains(self, right: Self) -> bool {
