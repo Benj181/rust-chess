@@ -1,10 +1,22 @@
 [workspace]
 resolver = "3"
-members = ["engine"]
+members = ["engine", "app", "frontend", "server"]
 
 [workspace.package]
 edition = "2024"
 version = "0.1.0"
+
+[workspace.dependencies]
+engine = { path = "engine" }
+app = { path = "app" }
+leptos = "0.8"
+leptos_meta = "0.8"
+leptos_router = "0.8"
+leptos_axum = "0.8"
+axum = { version = "0.8", features = ["ws"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+wasm-bindgen = "0.2"
+console_error_panic_hook = "0.1"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
@@ -23,6 +35,29 @@ lto = "thin"
 # Slows compile times, marginal improvements.
 codegen-units = 1
 
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[[workspace.metadata.leptos]]
+name = "rust-chess"
+bin-package = "server"
+lib-package = "frontend"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+style-file = "style/main.css"
+assets-dir = "public"
+site-addr = "127.0.0.1:3000"
+reload-port = 3001
+env = "DEV"
+bin-features = []
+bin-default-features = false
+lib-features = []
+lib-default-features = false
+lib-profile-release = "wasm-release"
 
 [workspace.lints.clippy]
 pedantic = { level = "deny", priority = -1 }

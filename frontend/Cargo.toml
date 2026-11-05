@@ -1,0 +1,13 @@
+[package]
+name = "frontend"
+edition.workspace = true
+version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+app = { workspace = true, features = ["hydrate"] }
+leptos = { workspace = true, features = ["hydrate"] }
+console_error_panic_hook.workspace = true
+wasm-bindgen.workspace = true
