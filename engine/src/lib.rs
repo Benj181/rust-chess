@@ -23,6 +23,7 @@ pub mod bitboard;
 pub mod board;
 pub mod castling;
 mod direction;
+pub mod game;
 pub mod movegen;
 pub mod moves;
 pub mod piece;

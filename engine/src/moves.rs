@@ -213,6 +213,12 @@ impl MoveList {
     pub fn iter(&self) -> std::slice::Iter<'_, Move> {
         self.as_slice().iter()
     }
+
+    /// Checks if the list contains a move.
+    #[must_use]
+    pub fn contains(&self, mv: Move) -> bool {
+        self.as_slice().contains(&mv)
+    }
 }
 
 impl Default for MoveList {

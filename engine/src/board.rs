@@ -367,6 +367,14 @@ impl Board {
 
         next
     }
+
+    /// Whether the side to move is in check.
+    #[must_use]
+    pub fn in_check(&self) -> bool {
+        let me = self.side_to_move();
+        self.king_square(me)
+            .is_some_and(|king| self.is_square_attacked(king, me.opposite()))
+    }
 }
 
 impl fmt::Display for Board {
