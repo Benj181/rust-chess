@@ -39,6 +39,14 @@ Also: `style/main.css` (CSS variables `--bg`, `--fg`, `--accent`),
 `public/favicon.svg`, and the Leptos config in `[[workspace.metadata.leptos]]`
 in the root `Cargo.toml`.
 
+**Design reference:** `mono-chess-design.pdf` in the root ("Mono Chess"): a
+dark, flat, monospace look (Fira Code only, no shadows or gradients, 2px
+radius). Page 1 is the desktop board-and-moves screen; page 2 has the phone
+layout, colour tokens, piece styling, geometry and behaviour (move history
+navigation, keyboard keys, captures, clocks). Follow it for all UI work.
+Parts of it need later work: SAN for the move list (engine), running clocks
+(milestone 3) and SVG pieces (milestone 5).
+
 **Stack:** Leptos 0.8 (SSR + hydration), leptos_axum, axum 0.8 (`ws`
 feature), tokio, cargo-leptos 0.3.x, target `wasm32-unknown-unknown`.
 
@@ -105,11 +113,17 @@ Docs: https://benj181.github.io/rust-chess/engine/ (built by
 5. **Polish**: original styling, my own SVG pieces, sounds, animations.
 6. Optional: persistence and deployment.
 
-## Current status: start of milestone 2
+## Current status: milestone 2, step 1
 
-Next session: **start step 1, going very slowly, one Leptos concept at a
-time.** `app/src/lib.rs` still has a placeholder `HomePage` that shows the
-legal move count of the start position.
+Done: `lib.rs` keeps `shell`, `App` and the routes; the `""` route shows
+`pages::play::PlayPage` (`app/src/pages.rs` + `app/src/pages/play.rs`), still
+the placeholder legal-move count. `START_FEN` still lives in `lib.rs`. Covered
+so far: `view!` syntax, `#[component]`, the router and meta components, and
+SSR plus hydration.
+
+Next: add `Game::new()` / `Default` in the engine, then
+`components/board.rs`, then step 2 (signals). Keep going very slowly, one
+Leptos concept at a time.
 
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example

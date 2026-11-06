@@ -1,4 +1,5 @@
-use engine::{board::Board, movegen::generate_legal, moves::MoveList};
+mod pages;
+
 use leptos::prelude::*;
 use leptos_meta::{MetaTags, Stylesheet, Title, provide_meta_context};
 use leptos_router::{
@@ -36,23 +37,9 @@ pub fn App() -> impl IntoView {
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage/>
+                    <Route path=StaticSegment("") view=pages::play::PlayPage/>
                 </Routes>
             </main>
         </Router>
-    }
-}
-
-#[component]
-fn HomePage() -> impl IntoView {
-    let legal_moves = Board::from_fen(START_FEN).map_or(0, |board| {
-        let mut moves = MoveList::new();
-        generate_legal(&board, &mut moves);
-        moves.len()
-    });
-
-    view! {
-        <h1>"rust-chess"</h1>
-        <p>"The engine finds " {legal_moves} " legal moves in the starting position."</p>
     }
 }
