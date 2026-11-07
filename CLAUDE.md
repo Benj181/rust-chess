@@ -114,13 +114,17 @@ Docs: https://benj181.github.io/rust-chess/engine/ (built by
 5. **Polish**: original styling, my own SVG pieces, sounds, animations.
 6. Optional: persistence and deployment.
 
-## Current status: milestone 2, steps 1–5 done; step 6 next
+## Current status: milestone 2, steps 1–5 and 6a–6b done; 6c next
 
 The board is playable by clicking, with highlights.
 
-- `pages/play.rs`: `PlayPage` owns `game: RwSignal<Game>` and passes it as a
-  prop to `<ChessBoard game/>`. Shows a live legal-move count and side to move
-  via derived closures (`let moves = move || game.with(..)`).
+- `pages/play.rs`: `PlayPage` owns `game: RwSignal<Game>` and
+  `selected: RwSignal<Option<Square>>` and passes both to
+  `<ChessBoard game selected/>`. A lowercase status line from
+  `status_text(&Game)` (the user likes it lowercase), and "new game" / "undo"
+  buttons that also clear `selected`; undo has `disabled=cant_undo`.
+- Engine `Display`: `Color` (`white`), `Move` (UCI), `WinReason`,
+  `DrawReason` (lowercase words, read as "{winner} wins by {reason}").
 - `components/board.rs`:
   - `glyph(Piece) -> char` and `PieceIcon` (span with `piece white`/`piece
     black`) are everything about how a piece looks; SVG pieces later only
@@ -162,8 +166,12 @@ Gotchas:
 - The user found the pace close to overwhelming; the rest of milestone 2
   reuses the same concepts, so say so and keep steps small.
 
-Next: step 6, the side panel (status line, move list, buttons), following
-the design in `mono-chess-design.pdf`.
+Coordinates: rank labels on file-a squares, file labels on rank-1 squares
+(`.coord` spans, positioned absolutely). Need rework for flipping.
+
+Step 6 parts: 6a status line (done), 6b new game / undo (done), 6c flip
+(re-rendering the square list from a signal, coordinates follow the edges),
+6d move list (UCI via `Move` `Display`), 6e layout per the design.
 
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example

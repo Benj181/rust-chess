@@ -9,14 +9,32 @@ fn status_text(game: &Game) -> String {
         Some(GameResult::Draw(reason)) => format!("draw by {reason}"),
     }
 }
+
 #[component]
 pub fn PlayPage() -> impl IntoView {
     let game = RwSignal::new(Game::new());
+    let selected = RwSignal::new(None);
     let status = move || game.with(status_text);
+    let new_game = move |_| {
+        game.set(Game::new());
+        selected.set(None);
+    };
+    let undo = move |_| {
+        game.update(|g| g.undo());
+        selected.set(None);
+    };
+    let cant_undo = move || game.with(|g| g.moves().is_empty());
 
     view! {
         <h1>"rust-chess"</h1>
         <p>{status}</p>
-        <ChessBoard game />
+        <ChessBoard game selected />
+        <div>
+            <button on:click=new_game>"new game"</button>
+            <button on:click=undo disabled=cant_undo>
+                "undo"
+            </button>
+
+        </div>
     }
 }

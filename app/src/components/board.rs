@@ -98,9 +98,7 @@ fn BoardSquare(
 }
 
 #[component]
-pub fn ChessBoard(game: RwSignal<Game>) -> impl IntoView {
-    let selected = RwSignal::new(None::<Square>);
-
+pub fn ChessBoard(game: RwSignal<Game>, selected: RwSignal<Option<Square>>) -> impl IntoView {
     view! {
         <div class="board">
             {Square::reading_order()
