@@ -113,27 +113,56 @@ Docs: https://benj181.github.io/rust-chess/engine/ (built by
 5. **Polish**: original styling, my own SVG pieces, sounds, animations.
 6. Optional: persistence and deployment.
 
-## Current status: milestone 2, step 2 (signals)
+## Current status: milestone 2, steps 1–5 done; step 6 next
 
-Done: step 1 and the static board of step 3. `Board::start`,
-`Board::START_FEN` and `Game::new` / `Default` are in the engine.
-`app/src/components/board.rs` has `ChessBoard`: a fixed `Game::new()`, the 64
-squares built with `flat_map` + `collect_view()` (rank 7 down to 0), each a
-`div` with `square dark`/`square light` and an optional `span` with
-`piece white`/`piece black` showing a solid Unicode glyph (`glyph` helper).
-`PlayPage` shows the old legal-move text plus `<ChessBoard/>`. CSS for board,
-squares and pieces is in `style/main.css` (64px squares, no outline yet).
+The board is playable by clicking, with highlights.
 
-Covered so far: components, `view!` with Rust inside `{ }`, attributes with
-Rust values, multiple classes, lists via iterators and `collect_view()`,
-`Option` rendering nothing, moving a `&Board` into `move` closures.
+- `pages/play.rs`: `PlayPage` owns `game: RwSignal<Game>` and passes it as a
+  prop to `<ChessBoard game/>`. Shows a live legal-move count and side to move
+  via derived closures (`let moves = move || game.with(..)`).
+- `components/board.rs`:
+  - `glyph(Piece) -> char` and `PieceIcon` (span with `piece white`/`piece
+    black`) are everything about how a piece looks; SVG pieces later only
+    change these.
+  - `BoardSquare(sq, game, selected)`: named derived closures above the view
+    (`is_selected`, `is_target`, `is_capture`, `is_last`, `is_check`, `piece`,
+    `on_click`), then a `div` with `class="square"` and `class:` toggles
+    (`dark`, `light`, `selected`, `target`, `capture`, `last_move`, `check`).
+  - `ChessBoard(game)`: owns `selected: RwSignal<Option<Square>>`, renders
+    `Square::reading_order()` as 64 `BoardSquare`s.
+  - `click_square`: plays `find_move(from, sq, None)` or the queen promotion,
+    otherwise selects via `can_select`.
+- `style/main.css`: 64px grid, design colours, dot via `.target::after`, ring
+  via `.capture::after`, `color-mix` for last move and check.
+- Engine helpers added for the UI: `Square::is_dark`, `Square::reading_order`
+  (double-ended, `.rev()` for a flipped board), `Game::find_move`, `targets`,
+  `can_select`, `last_move`. `Game` caches its legal moves in a `legal` field
+  (refreshed on `play`/`undo`, emptied when the game ends) and
+  `legal_moves()` returns `&MoveList`. `Game` methods are ordered:
+  constructors, queries, actions, private helpers.
 
-Editor: the user's Neovim (AstroNvim) formats Rust through rust-analyzer with
-`leptosfmt --stdin --rustfmt`, so `view!` macros get indented on save.
-Nested `view!` code was very confusing before that; suggest writing the
-outer tags first, then filling in.
+Covered so far: components and props, `view!` with Rust inside `{ }`,
+attributes and `class:` toggles, lists via `collect_view()`, `Option`
+rendering nothing, signals (`with`/`update`/`get`/`set`), why `move ||`
+matters (a value is read once, a closure is re-run), derived signals, events,
+lifting state up, CSS grid, `::after`, specificity, `color-mix`.
 
-Next: signals (`RwSignal`), going very slowly, one Leptos concept at a time.
+Style the user likes: logic in named closures above the `view!`, the view
+itself a flat list of facts. Chess questions are answered by the engine, the
+UI only maps answers to classes and clicks. Keep state as low as possible.
+
+Gotchas:
+- If a change seems to have no effect in the browser, hard reload
+  (`Ctrl+Shift+R`) first: the browser can cache old CSS or WASM.
+- Editor: the user's Neovim (AstroNvim) formats Rust through rust-analyzer
+  with `leptosfmt --stdin --rustfmt`, so `view!` macros get indented on save.
+  Suggest writing outer tags first, then filling in.
+- Dots are hard to see on dark squares; consider a lighter dot there.
+- The user found the pace close to overwhelming; the rest of milestone 2
+  reuses the same concepts, so say so and keep steps small.
+
+Next: step 6, the side panel (status line, move list, buttons), following
+the design in `mono-chess-design.pdf`.
 
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example

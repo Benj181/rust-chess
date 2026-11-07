@@ -49,18 +49,45 @@ fn BoardSquare(
     game: RwSignal<Game>,
     selected: RwSignal<Option<Square>>,
 ) -> impl IntoView {
+    let is_dark = sq.is_dark();
+    let is_selected = move || selected.get() == Some(sq);
+    let is_target = move || {
+        selected
+            .get()
+            .is_some_and(|from| game.with(|g| g.targets(from).contains(sq)))
+    };
+    let is_capture = move || is_target() && game.with(|g| g.board().piece_at(sq).is_some());
+    let is_last = move || {
+        game.with(|g| {
+            g.last_move()
+                .is_some_and(|mv| mv.from() == sq || mv.to() == sq)
+        })
+    };
+    let is_check = move || {
+        game.with(|g| {
+            g.board().in_check() && g.board().king_square(g.board().side_to_move()) == Some(sq)
+        })
+    };
+    let piece = move || {
+        game.with(|g| g.board().piece_at(sq))
+            .map(|piece| view! { <PieceIcon piece /> })
+    };
+
+    let on_click = move |_| click_square(game, selected, sq);
+
     view! {
         <div
-            class=if sq.is_dark() { "square dark" } else { "square light" }
-            class:selected=move || selected.get() == Some(sq)
-            on:click=move |_| click_square(game, selected, sq)
-            class:target=move || {
-                selected.get().is_some_and(|from| game.with(|g| g.targets(from).contains(sq)))
-            }
+            class="square"
+            class:dark=is_dark
+            class:light={!is_dark}
+            class:selected=is_selected
+            class:target=is_target
+            class:capture=is_capture
+            class:last_move=is_last
+            class:check=is_check
+            on:click=on_click
         >
-            {move || {
-                game.with(|g| g.board().piece_at(sq)).map(|piece| view! { <PieceIcon piece /> })
-            }}
+            {piece}
         </div>
     }
 }
@@ -77,5 +104,3 @@ pub fn ChessBoard(game: RwSignal<Game>) -> impl IntoView {
         </div>
     }
 }
-
-
