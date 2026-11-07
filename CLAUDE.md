@@ -113,17 +113,27 @@ Docs: https://benj181.github.io/rust-chess/engine/ (built by
 5. **Polish**: original styling, my own SVG pieces, sounds, animations.
 6. Optional: persistence and deployment.
 
-## Current status: milestone 2, step 1
+## Current status: milestone 2, step 2 (signals)
 
-Done: `lib.rs` keeps `shell`, `App` and the routes; the `""` route shows
-`pages::play::PlayPage` (`app/src/pages.rs` + `app/src/pages/play.rs`), still
-the placeholder legal-move count. `START_FEN` still lives in `lib.rs`. Covered
-so far: `view!` syntax, `#[component]`, the router and meta components, and
-SSR plus hydration.
+Done: step 1 and the static board of step 3. `Board::start`,
+`Board::START_FEN` and `Game::new` / `Default` are in the engine.
+`app/src/components/board.rs` has `ChessBoard`: a fixed `Game::new()`, the 64
+squares built with `flat_map` + `collect_view()` (rank 7 down to 0), each a
+`div` with `square dark`/`square light` and an optional `span` with
+`piece white`/`piece black` showing a solid Unicode glyph (`glyph` helper).
+`PlayPage` shows the old legal-move text plus `<ChessBoard/>`. CSS for board,
+squares and pieces is in `style/main.css` (64px squares, no outline yet).
 
-Next: add `Game::new()` / `Default` in the engine, then
-`components/board.rs`, then step 2 (signals). Keep going very slowly, one
-Leptos concept at a time.
+Covered so far: components, `view!` with Rust inside `{ }`, attributes with
+Rust values, multiple classes, lists via iterators and `collect_view()`,
+`Option` rendering nothing, moving a `&Board` into `move` closures.
+
+Editor: the user's Neovim (AstroNvim) formats Rust through rust-analyzer with
+`leptosfmt --stdin --rustfmt`, so `view!` macros get indented on save.
+Nested `view!` code was very confusing before that; suggest writing the
+outer tags first, then filling in.
+
+Next: signals (`RwSignal`), going very slowly, one Leptos concept at a time.
 
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example

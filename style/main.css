@@ -17,3 +17,22 @@ body {
 h1 {
     color: var(--accent);
 }
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(8, 64px);
+}
+
+.square {
+    width: 64px;
+    height: 64px;
+    display: grid;
+    place-items: center;
+}
+
+.light { background: #ddd6ce; }
+.dark  { background: #2b2520; }
+
+.piece { font-size: 48px; line-height: 1; }
+.piece.white { color: #fbf9f6; }
+.piece.black { color: #100e0c; }
