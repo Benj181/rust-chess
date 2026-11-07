@@ -75,11 +75,14 @@ fn BoardSquare(
 
     let on_click = move |_| click_square(game, selected, sq);
 
+    let rank_label = (sq.file() == 0).then(|| sq.rank() + 1);
+    let file_label = (sq.rank() == 0).then(|| (b'a' + sq.file()) as char);
+
     view! {
         <div
             class="square"
             class:dark=is_dark
-            class:light={!is_dark}
+            class:light=!is_dark
             class:selected=is_selected
             class:target=is_target
             class:capture=is_capture
@@ -88,6 +91,8 @@ fn BoardSquare(
             on:click=on_click
         >
             {piece}
+            {rank_label.map(|r| view! { <span class="coord rank">{r}</span> })}
+            {file_label.map(|f| view! { <span class="coord file">{f}</span> })}
         </div>
     }
 }

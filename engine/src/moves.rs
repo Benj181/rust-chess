@@ -1,6 +1,9 @@
 //! Moves: [`MoveKind`], the compact [`Move`] and the fixed-capacity [`MoveList`].
 
-use crate::{piece::PieceKind, square::Square};
+use crate::{
+    piece::{Color, Piece, PieceKind},
+    square::Square,
+};
 use std::fmt;
 
 const MAX_MOVES: usize = 256;
@@ -118,6 +121,16 @@ impl fmt::Debug for Move {
             .field("to", &format_args!("{}", self.to()))
             .field("kind", &self.kind())
             .finish()
+    }
+}
+
+impl fmt::Display for Move {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.from(), self.to())?;
+        if let Some(kind) = self.kind().promotion() {
+            write!(f, "{}", Piece::new(Color::Black, kind).to_char())?;
+        }
+        Ok(())
     }
 }
 

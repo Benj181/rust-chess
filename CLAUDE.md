@@ -35,7 +35,8 @@ a learning project. The chess engine is mostly done; the main goal now is to
 | `frontend/` | WASM entry point: `hydrate()` mounts `App` in the browser. |
 | `server/` | Axum binary: serves SSR pages, static files and (later) WebSockets. |
 
-Also: `style/main.css` (CSS variables `--bg`, `--fg`, `--accent`),
+Also: `style/main.css` (all colours are design tokens on `:root`; no hex
+values outside it),
 `public/favicon.svg`, and the Leptos config in `[[workspace.metadata.leptos]]`
 in the root `Cargo.toml`.
 

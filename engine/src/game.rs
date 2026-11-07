@@ -8,6 +8,7 @@ use crate::{
     piece::{Color, PieceKind},
     square::Square,
 };
+use std::fmt;
 
 /// How a game ended.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -39,6 +40,28 @@ pub enum DrawReason {
     FiftyMoveRule,
     InsufficientMaterial,
     Agreement,
+}
+
+impl fmt::Display for WinReason {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Checkmate => "checkmate",
+            Self::Resignation => "resignation",
+            Self::Timeout => "timeout",
+        })
+    }
+}
+
+impl fmt::Display for DrawReason {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Stalemate => "stalemate",
+            Self::ThreefoldRepetition => "threefold repetition",
+            Self::FiftyMoveRule => "the fifty-move rule",
+            Self::InsufficientMaterial => "insufficient material",
+            Self::Agreement => "agreement",
+        })
+    }
 }
 
 /// Why [`Game::play`] rejected a move.

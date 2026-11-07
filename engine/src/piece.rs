@@ -23,6 +23,15 @@ impl Color {
     }
 }
 
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::White => "white",
+            Self::Black => "black",
+        })
+    }
+}
+
 /// The six kinds of chess piece, ordered by value with the king last.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PieceKind {
