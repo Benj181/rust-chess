@@ -65,6 +65,17 @@ pub struct Game {
 }
 
 impl Game {
+    fn from_board(board: Board) -> Self {
+        let mut g = Self {
+            board,
+            history: Vec::new(),
+            moves: Vec::new(),
+            result: None,
+        };
+        g.result = g.detect_result();
+        g
+    }
+
     /// Starts a game from the position in `fen`, or returns `None` if the FEN
     /// is invalid.
     ///
@@ -73,14 +84,13 @@ impl Game {
     #[must_use]
     pub fn from_fen(fen: &str) -> Option<Self> {
         let board = Board::from_fen(fen)?;
-        let mut g = Self {
-            board,
-            history: Vec::new(),
-            moves: Vec::new(),
-            result: None,
-        };
-        g.result = g.detect_result();
-        Some(g)
+        Some(Self::from_board(board))
+    }
+
+    /// Starts a game from the standard starting position.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::from_board(Board::start())
     }
 
     /// The current position.
@@ -242,5 +252,11 @@ impl Game {
             self.moves.pop();
             self.result = self.detect_result();
         }
+    }
+}
+
+impl Default for Game {
+    fn default() -> Self {
+        Self::new()
     }
 }

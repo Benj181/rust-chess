@@ -34,6 +34,15 @@ pub struct Board {
 }
 
 impl Board {
+    /// The FEN of the standard starting position.
+    pub const START_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+    /// The standard starting position.
+    #[must_use]
+    pub fn start() -> Self {
+        Self::from_fen(Self::START_FEN).unwrap_or_else(Self::empty)
+    }
+
     /// Parses a position from FEN.
     ///
     /// The two move clocks may be left off, and then default to 0 and 1. Returns
