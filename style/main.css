@@ -28,6 +28,7 @@ h1 {
     height: 64px;
     display: grid;
     place-items: center;
+    position: relative;
 }
 
 .light { background: #ddd6ce; }
@@ -38,3 +39,12 @@ h1 {
 .piece.black { color: #100e0c; }
 
 .square.selected { background: #b09a68; }
+
+.square.target::after {
+    content: "";
+    position: absolute;
+    width: 26%;
+    height: 26%;
+    border-radius: 50%;
+    background: rgba(16, 13, 10, 0.45);
+}
