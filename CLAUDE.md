@@ -114,7 +114,7 @@ Docs: https://benj181.github.io/rust-chess/engine/ (built by
 5. **Polish**: original styling, my own SVG pieces, sounds, animations.
 6. Optional: persistence and deployment.
 
-## Current status: milestone 2, steps 1–5 and 6a–6b done; 6c next
+## Current status: milestone 2, steps 1–5 and 6a–6c done; 6d next
 
 The board is playable by clicking, with highlights.
 
@@ -133,14 +133,15 @@ The board is playable by clicking, with highlights.
     (`is_selected`, `is_target`, `is_capture`, `is_last`, `is_check`, `piece`,
     `on_click`), then a `div` with `class="square"` and `class:` toggles
     (`dark`, `light`, `selected`, `target`, `capture`, `last_move`, `check`).
-  - `ChessBoard(game)`: owns `selected: RwSignal<Option<Square>>`, renders
-    `Square::reading_order()` as 64 `BoardSquare`s.
+  - `ChessBoard(game, selected, perspective: RwSignal<Color>)`: a `move ||`
+    closure renders `Square::reading_order(perspective.get())` as 64
+    `BoardSquare`s, so a flip rebuilds the list.
   - `click_square`: plays `find_move(from, sq, None)` or the queen promotion,
     otherwise selects via `can_select`.
 - `style/main.css`: 64px grid, design colours, dot via `.target::after`, ring
   via `.capture::after`, `color-mix` for last move and check.
-- Engine helpers added for the UI: `Square::is_dark`, `Square::reading_order`
-  (double-ended, `.rev()` for a flipped board), `Game::find_move`, `targets`,
+- Engine helpers added for the UI: `Square::is_dark`, `Square::reading_order(Color)`
+  (one pipeline, `file ^ mask` / `rank ^ mask` with mask 0 or 7), `Game::find_move`, `targets`,
   `can_select`, `last_move`. `Game` caches its legal moves in a `legal` field
   (refreshed on `play`/`undo`, emptied when the game ends) and
   `legal_moves()` returns `&MoveList`. `Game` methods are ordered:
@@ -166,11 +167,13 @@ Gotchas:
 - The user found the pace close to overwhelming; the rest of milestone 2
   reuses the same concepts, so say so and keep steps small.
 
-Coordinates: rank labels on file-a squares, file labels on rank-1 squares
-(`.coord` spans, positioned absolutely). Need rework for flipping.
+Coordinates: `BoardSquare` gets a plain `side: Color` prop; rank labels on
+the left file and file labels on the bottom rank (`sq.file() ^ mask == 0`),
+as `.coord` spans positioned absolutely. `PlayPage` owns
+`perspective: RwSignal<Color>` and a "flip" button.
 
 Step 6 parts: 6a status line (done), 6b new game / undo (done), 6c flip
-(re-rendering the square list from a signal, coordinates follow the edges),
+(done),
 6d move list (UCI via `Move` `Display`), 6e layout per the design.
 
 Milestone 2 plan:

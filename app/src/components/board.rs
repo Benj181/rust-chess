@@ -48,6 +48,7 @@ fn BoardSquare(
     sq: Square,
     game: RwSignal<Game>,
     selected: RwSignal<Option<Square>>,
+    side: Color,
 ) -> impl IntoView {
     let is_dark = sq.is_dark();
     let is_selected = move || selected.get() == Some(sq);
@@ -75,8 +76,13 @@ fn BoardSquare(
 
     let on_click = move |_| click_square(game, selected, sq);
 
-    let rank_label = (sq.file() == 0).then(|| sq.rank() + 1);
-    let file_label = (sq.rank() == 0).then(|| (b'a' + sq.file()) as char);
+    let mask = match side {
+        Color::White => 0,
+        Color::Black => 7,
+    };
+
+    let rank_label = (sq.file() ^ mask == 0).then(|| sq.rank() + 1);
+    let file_label = (sq.rank() ^ mask == 0).then(|| (b'a' + sq.file()) as char);
 
     view! {
         <div
@@ -98,12 +104,16 @@ fn BoardSquare(
 }
 
 #[component]
-pub fn ChessBoard(game: RwSignal<Game>, selected: RwSignal<Option<Square>>) -> impl IntoView {
-    view! {
-        <div class="board">
-            {Square::reading_order()
-                .map(|sq| view! { <BoardSquare sq game selected /> })
-                .collect_view()}
-        </div>
-    }
+pub fn ChessBoard(
+    game: RwSignal<Game>,
+    selected: RwSignal<Option<Square>>,
+    perspective: RwSignal<Color>,
+) -> impl IntoView {
+    let squares = move || {
+        let side = perspective.get();
+        Square::reading_order(side)
+            .map(|sq| view! { <BoardSquare sq game selected side /> })
+            .collect_view()
+    };
+    view! { <div class="board">{squares}</div> }
 }

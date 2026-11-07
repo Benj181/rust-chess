@@ -1,5 +1,8 @@
 use crate::components::board::ChessBoard;
-use engine::game::{Game, GameResult};
+use engine::{
+    game::{Game, GameResult},
+    piece::Color,
+};
 use leptos::prelude::*;
 
 fn status_text(game: &Game) -> String {
@@ -24,17 +27,19 @@ pub fn PlayPage() -> impl IntoView {
         selected.set(None);
     };
     let cant_undo = move || game.with(|g| g.moves().is_empty());
+    let perspective = RwSignal::new(Color::White);
+    let flip = move |_| perspective.update(|p| *p = p.opposite());
 
     view! {
         <h1>"rust-chess"</h1>
         <p>{status}</p>
-        <ChessBoard game selected />
+        <ChessBoard game selected perspective />
         <div>
             <button on:click=new_game>"new game"</button>
             <button on:click=undo disabled=cant_undo>
                 "undo"
             </button>
-
+            <button on:click=flip>"flip"</button>
         </div>
     }
 }

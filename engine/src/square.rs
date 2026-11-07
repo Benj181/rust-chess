@@ -2,6 +2,8 @@
 
 use std::fmt;
 
+use crate::piece::Color;
+
 /// One of the 64 squares, always valid.
 ///
 /// Squares are numbered a1 = 0, b1 = 1, …, h1 = 7, a2 = 8, …, h8 = 63, so
@@ -89,22 +91,31 @@ impl Square {
         (self.file() ^ self.rank()) & 1 == 0
     }
 
-    /// All 64 squares in the order a board is read from White's side: rank 8
-    /// first, each rank from the a-file to the h-file. Reverse it for Black's
-    /// side.
+    /// All 64 squares in the order a board is read by the player of
+    /// `perspective`: top row first, each row left to right.
+    ///
+    /// From White's side that is a8, b8, …, h1. From Black's side the board is
+    /// turned around, so it is h1, g1, …, a8.
     ///
     /// ```
-    /// use engine::square::Square;
+    /// use engine::{piece::Color, square::Square};
     ///
-    /// let mut squares = Square::reading_order();
-    /// assert_eq!(squares.next(), Some(Square::A8));
-    /// assert_eq!(squares.next_back(), Some(Square::H1));
+    /// let mut white = Square::reading_order(Color::White);
+    /// assert_eq!(white.next(), Some(Square::A8));
+    /// assert_eq!(white.last(), Some(Square::H1));
+    ///
+    /// let mut black = Square::reading_order(Color::Black);
+    /// assert_eq!(black.next(), Some(Square::H1));
+    /// assert_eq!(black.last(), Some(Square::A8));
     /// ```
-    #[must_use]
-    pub fn reading_order() -> impl DoubleEndedIterator<Item = Self> {
-        (0..8)
-            .rev()
-            .flat_map(|rank| (0..8).filter_map(move |file| Self::from_file_rank(file, rank)))
+    pub fn reading_order(perspective: Color) -> impl Iterator<Item = Self> {
+        let mask = match perspective {
+            Color::White => 0,
+            Color::Black => 7,
+        };
+        (0..8).rev().flat_map(move |rank| {
+            (0..8).filter_map(move |file| Self::from_file_rank(file ^ mask, rank ^ mask))
+        })
     }
 }
 
