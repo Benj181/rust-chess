@@ -36,3 +36,5 @@ h1 {
 .piece { font-size: 48px; line-height: 1; }
 .piece.white { color: #fbf9f6; }
 .piece.black { color: #100e0c; }
+
+.square.selected { background: #b09a68; }

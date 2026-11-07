@@ -221,6 +221,14 @@ impl MoveList {
     }
 }
 
+impl PartialEq for MoveList {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_slice() == other.as_slice()
+    }
+}
+
+impl Eq for MoveList {}
+
 impl Default for MoveList {
     fn default() -> Self {
         Self::new()

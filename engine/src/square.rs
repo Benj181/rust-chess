@@ -82,6 +82,30 @@ impl Square {
     pub const fn rank(self) -> u8 {
         self.0 / 8
     }
+
+    /// Whether this is a dark square. a1 is dark, h1 is light.
+    #[must_use]
+    pub const fn is_dark(self) -> bool {
+        (self.file() ^ self.rank()) & 1 == 0
+    }
+
+    /// All 64 squares in the order a board is read from White's side: rank 8
+    /// first, each rank from the a-file to the h-file. Reverse it for Black's
+    /// side.
+    ///
+    /// ```
+    /// use engine::square::Square;
+    ///
+    /// let mut squares = Square::reading_order();
+    /// assert_eq!(squares.next(), Some(Square::A8));
+    /// assert_eq!(squares.next_back(), Some(Square::H1));
+    /// ```
+    #[must_use]
+    pub fn reading_order() -> impl DoubleEndedIterator<Item = Self> {
+        (0..8)
+            .rev()
+            .flat_map(|rank| (0..8).filter_map(move |file| Self::from_file_rank(file, rank)))
+    }
 }
 
 impl fmt::Display for Square {
