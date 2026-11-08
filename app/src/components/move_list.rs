@@ -28,6 +28,11 @@ fn MoveControls(
     };
     let cant_undo = move || game.with(|g| g.moves().is_empty());
     let flip = move |_| perspective.update(|p| *p = p.opposite());
+    let demo = move |_| {
+        game.set(crate::dev::demo_game());
+        selected.set(None);
+    };
+    let demo_button = cfg!(debug_assertions).then(|| view! { <button on:click=demo>"demo"</button> });
 
     view! {
         <div class="move-controls">
@@ -36,6 +41,7 @@ fn MoveControls(
                 "undo"
             </button>
             <button on:click=flip>"flip"</button>
+            {demo_button}
         </div>
     }
 }

@@ -24,10 +24,10 @@ pub fn PlayPage() -> impl IntoView {
 
     view! {
         <div class="play" on:click=de_select>
-            <div class="board-column">
-                <h1>"rust-chess"</h1>
-                <p>{status}</p>
+            <div class="board-frame">
+                <span class="frame-label top">"rust-chess"</span>
                 <ChessBoard game selected perspective />
+                <span class="frame-label bottom">{status}</span>
             </div>
             <MoveList game selected perspective />
         </div>
