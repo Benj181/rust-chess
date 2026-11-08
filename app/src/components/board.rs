@@ -23,7 +23,7 @@ fn glyph(piece: Piece) -> char {
 }
 
 #[component]
-fn PieceIcon(piece: Piece) -> impl IntoView {
+pub fn PieceIcon(piece: Piece) -> impl IntoView {
     let class = match piece.color() {
         Color::White => "piece white",
         Color::Black => "piece black",

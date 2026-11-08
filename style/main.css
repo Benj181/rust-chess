@@ -82,6 +82,32 @@ button:disabled {
 .frame-label.top    { top: 0;    transform: translateY(-50%); color: var(--text); }
 .frame-label.bottom { bottom: 0; transform: translateY(50%);  color: var(--dim); }
 
+.material {
+    position: absolute;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 6px;
+    line-height: 1;
+    color: var(--dim);
+    background: var(--bg);
+}
+.material:empty { display: none; }
+.material.top    { top: 0;    transform: translateY(-50%); }
+.material.bottom { bottom: 0; transform: translateY(50%); }
+.material .captured { display: flex; }
+.material .piece {
+    font-size: 15px;
+    line-height: 1;
+    color: var(--dim);
+}
+.material .piece + .piece {
+    margin-left: -6px;
+    text-shadow: -1.5px 0 var(--bg);
+}
+.material .lead { font-size: 11px; }
+
 .board {
     position: relative;
     touch-action: none;

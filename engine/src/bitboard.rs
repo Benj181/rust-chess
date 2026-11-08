@@ -71,6 +71,12 @@ impl Bitboard {
         self.0 == Self::EMPTY.0
     }
 
+    /// How many squares are in the set.
+    #[must_use]
+    pub const fn count(self) -> u32 {
+        self.0.count_ones()
+    }
+
     #[must_use]
     pub(crate) const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)

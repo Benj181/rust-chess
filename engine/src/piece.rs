@@ -53,6 +53,19 @@ impl PieceKind {
         Self::Queen,
         Self::King,
     ];
+
+    /// The usual material value in pawns: pawn 1, knight and bishop 3, rook
+    /// 5, queen 9. The king, which can never be captured, is 0.
+    #[must_use]
+    pub const fn value(self) -> u32 {
+        match self {
+            Self::Pawn => 1,
+            Self::Knight | Self::Bishop => 3,
+            Self::Rook => 5,
+            Self::Queen => 9,
+            Self::King => 0,
+        }
+    }
 }
 
 /// A piece: a kind together with the color it belongs to.

@@ -250,6 +250,15 @@ impl Board {
         self.pieces(kind) & self.occupied_by(color)
     }
 
+    /// The total [`value`](PieceKind::value) of `color`'s pieces, in pawns.
+    #[must_use]
+    pub fn material(&self, color: Color) -> u32 {
+        PieceKind::ALL
+            .iter()
+            .map(|&kind| kind.value().saturating_mul(self.pieces_of(color, kind).count()))
+            .sum()
+    }
+
     pub(crate) const fn put(&mut self, piece: Piece, sq: Square) {
         self.pieces_mut(piece.kind()).set(sq);
         match piece.color() {

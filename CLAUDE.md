@@ -263,6 +263,16 @@ square is just `click_square(state, to)`, so promotions work for free.
 fades (`.drag_from`); `.board` has `touch-action: none`, `user-select: none`.
 Milestone 2 plan is complete.
 
+Material display: engine has `Bitboard::count`, `PieceKind::value` (p 1, n/b
+3, r 5, q 9, k 0) and `Board::material(color)`. `components/material.rs`:
+`MaterialStrip(at_top)` (player = perspective, or its opposite at the top;
+reads `shown`), placed twice in `.board-frame`. Unlike the design (left,
+with the name), the user wants it at the RIGHT end of the top/bottom frame
+lines, chess.com-like: `+N` first (left), then groups by value (queen ..
+pawns at the right corner). `captured_by` returns `(Piece, count)` per kind;
+pieces in a group overlap (`margin-left: -6px` + a bg-coloured
+`text-shadow` cut-out), groups spaced by `gap`. Captures use `--dim`.
+
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example
    `pages/play.rs` and `components/board.rs`). Point the `""` route at the play
