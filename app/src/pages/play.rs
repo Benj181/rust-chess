@@ -2,7 +2,7 @@ use crate::components::board::ChessBoard;
 use crate::components::move_list::MoveList;
 use crate::state::PlayState;
 use engine::game::{Game, GameResult};
-use leptos::prelude::*;
+use leptos::{ev, prelude::*};
 
 fn status_text(game: &Game) -> String {
     match game.result() {
@@ -15,8 +15,11 @@ fn status_text(game: &Game) -> String {
 #[component]
 pub fn PlayPage() -> impl IntoView {
     let state = PlayState::provide();
+    let deselect = window_event_listener(ev::click, move |_| state.selected.set(None));
+    on_cleanup(move || deselect.remove());
+
     view! {
-        <div class="play" on:click=move |_| state.selected.set(None)>
+        <div class="play">
             <div class="board-frame">
                 <span class="frame-label top">"rust-chess"</span>
                 <ChessBoard />

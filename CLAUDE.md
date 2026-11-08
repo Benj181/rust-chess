@@ -213,8 +213,24 @@ History navigation (in progress):
   `.move.current` / `.move:hover` CSS. Clicking sets `viewing`.
 - Taught: `Callback`, `#[prop(into)]`, `Memo`, context, `.get` vs `.with`,
   why props must be owned (`'static`), store the index and derive the board.
-- Remaining: ⏮ ◀ ▶ ⏭ buttons plus "back to current move" (only while looking
-  back), arrow keys.
+- `PlayState::view_ply(ply)` clears the selection and stores `None` for the
+  latest ply (so clicking the last move is live). Used by the move list and
+  the nav buttons.
+- `MoveControls` bar (`justify-content: space-between`), as in the design:
+  flip, |< < > >| (disabled at start / when live), `GameMenu` (···).
+  Icons: `components/icons.rs` has SVG path constants and
+  `Icon(path: &'static str)`; `.icon` CSS draws them with `stroke:
+  currentColor`.
+- `GameMenu`: local `open` signal, toggle stops propagation, a
+  `window_event_listener(ev::click)` closes it (removed in `on_cleanup`).
+  Items: offer draw (local game: ends as agreed draw), resign (side to move),
+  both disabled when over; new game; take back; demo (debug only).
+- "back to current move" button via `<Show>`, only while looking back.
+- Deselecting: a window click listener in `PlayPage`; the board stops
+  propagation so square clicks still select.
+- Taught also: `<Show>`, SVG paths, window listeners + `on_cleanup`,
+  `let _ =` on an ignored `Result`.
+- Remaining: keyboard (← → ↑ ↓ and `f` for flip).
 
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example

@@ -48,6 +48,12 @@ impl PlayState {
         self.viewing.with(Option::is_none)
     }
 
+    pub fn view_ply(self, ply: usize) {
+        let latest = self.game.with(|g| g.moves().len());
+        self.selected.set(None);
+        self.viewing.set((ply < latest).then_some(ply));
+    }
+
     pub fn go_live(self) {
         self.selected.set(None);
         self.viewing.set(None);
