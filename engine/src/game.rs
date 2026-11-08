@@ -85,6 +85,7 @@ pub struct Game {
     board: Board,
     history: Vec<Board>,
     moves: Vec<Move>,
+    san: Vec<String>,
     legal: MoveList,
     result: Option<GameResult>,
 }
@@ -116,6 +117,13 @@ impl Game {
     #[must_use]
     pub const fn moves(&self) -> &[Move] {
         self.moves.as_slice()
+    }
+
+    /// The moves played so far in standard algebraic notation, like `Nf3`,
+    /// oldest first.
+    #[must_use]
+    pub const fn san_moves(&self) -> &[String] {
+        self.san.as_slice()
     }
 
     /// The last move played, or `None` before the first move.
@@ -189,6 +197,7 @@ impl Game {
         }
 
         let next = self.board.make_move(mv);
+        self.san.push(self.board.san(mv));
         self.history.push(std::mem::replace(&mut self.board, next));
         self.moves.push(mv);
         self.refresh();
@@ -223,6 +232,7 @@ impl Game {
         if let Some(previous) = self.history.pop() {
             self.board = previous;
             self.moves.pop();
+            self.san.pop();
             self.refresh();
         }
     }
@@ -253,6 +263,7 @@ impl Game {
             board,
             history: Vec::new(),
             moves: Vec::new(),
+            san: Vec::new(),
             legal: MoveList::new(),
             result: None,
         };

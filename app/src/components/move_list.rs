@@ -48,13 +48,13 @@ pub fn MoveList(
 ) -> impl IntoView {
     let rows = move || {
         game.with(|g| {
-            g.moves()
+            g.san_moves()
                 .chunks(2)
                 .enumerate()
                 .map(|(i, pair)| {
                     let number = i + 1;
-                    let white = pair.first().map(|mv| mv.to_string());
-                    let black = pair.get(1).map(|mv| mv.to_string());
+                    let white = pair.first().cloned();
+                    let black = pair.get(1).cloned();
                     view! { <MoveRow number white black /> }
                 })
                 .collect_view()

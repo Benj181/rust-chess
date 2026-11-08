@@ -27,4 +27,5 @@ pub mod game;
 pub mod movegen;
 pub mod moves;
 pub mod piece;
+mod san;
 pub mod square;

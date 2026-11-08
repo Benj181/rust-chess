@@ -85,6 +85,18 @@ impl Square {
         self.0 / 8
     }
 
+    /// The file as a letter, `a` to `h`.
+    #[must_use]
+    pub fn file_char(self) -> char {
+        char::from(b'a'.saturating_add(self.file()))
+    }
+
+    /// The rank as a digit, `1` to `8`.
+    #[must_use]
+    pub fn rank_char(self) -> char {
+        char::from(b'1'.saturating_add(self.rank()))
+    }
+
     /// Whether this is a dark square. a1 is dark, h1 is light.
     #[must_use]
     pub const fn is_dark(self) -> bool {
@@ -121,8 +133,6 @@ impl Square {
 
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let file = char::from(b'a'.saturating_add(self.file()));
-        let rank = self.rank().saturating_add(1);
-        write!(f, "{file}{rank}")
+        write!(f, "{}{}", self.file_char(), self.rank_char())
     }
 }

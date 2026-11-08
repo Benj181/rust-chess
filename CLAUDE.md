@@ -45,7 +45,7 @@ dark, flat, monospace look (Fira Code only, no shadows or gradients, 2px
 radius). Page 1 is the desktop board-and-moves screen; page 2 has the phone
 layout, colour tokens, piece styling, geometry and behaviour (move history
 navigation, keyboard keys, captures, clocks). Follow it for all UI work.
-Parts of it need later work: SAN for the move list (engine), running clocks
+Parts of it need later work: running clocks
 (milestone 3) and SVG pieces (milestone 5).
 
 **Stack:** Leptos 0.8 (SSR + hydration), leptos_axum, axum 0.8 (`ws`
@@ -78,7 +78,8 @@ Idioms used throughout:
 
 ## Engine API (done)
 
-- `square::Square`: `from_algebraic`, `from_file_rank`, `file`, `rank`, `Display` (`e4`).
+- `square::Square`: `from_algebraic`, `from_file_rank`, `file`, `rank`,
+  `file_char`, `rank_char`, `Display` (`e4`).
 - `bitboard::Bitboard`: set ops, `is_empty`, iterates its squares.
 - `piece::{Color, PieceKind, Piece}`: `from_char` / `to_char`.
 - `moves::{Move, MoveKind, MoveList}`: `Move` is a `Copy` `u16` with
@@ -86,10 +87,12 @@ Idioms used throughout:
   `contains`, `len`.
 - `board::Board`: `from_fen`, `to_fen`, `make_move` (copy-make), `piece_at`,
   `in_check`, `king_square`, `halfmove_clock`, `same_position`,
-  `insufficient_material`, `Display`.
+  `insufficient_material`, `Display`, and `san(Move)` (in `san.rs`: `Nbd2`,
+  `exd5`, `e8=Q`, `O-O`, `+`/`#`).
 - `movegen`: `generate_legal`, `generate_pseudo_legal`, `perft`. Verified by
   perft on 5 standard positions.
-- `game::Game`: `from_fen`, `board`, `moves`, `result`, `legal_moves` (empty
+- `game::Game`: `from_fen`, `board`, `moves`, `san_moves` (cached, pushed on
+  `play`, popped on `undo`), `result`, `legal_moves` (empty
   once over), `play(Move)`, `play_uci("e2e4" / "e7e8q")`, `undo`,
   `resign(Color)`, `agree_draw`. It keeps a `history: Vec<Board>` and detects
   checkmate, stalemate, the 50-move rule, threefold repetition and
