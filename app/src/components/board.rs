@@ -3,7 +3,13 @@ use engine::{
     piece::{Color, Piece, PieceKind},
     square::Square,
 };
-use leptos::prelude::*;
+use leptos::{ev, prelude::*};
+
+#[derive(Clone, Copy)]
+struct Drag {
+    from: RwSignal<Option<Square>>,
+    at: RwSignal<(i32, i32)>,
+}
 
 fn glyph(piece: Piece) -> char {
     match piece.kind() {
@@ -49,7 +55,7 @@ fn click_square(state: PlayState, sq: Square) {
 }
 
 #[component]
-fn BoardSquare(sq: Square, side: Color) -> impl IntoView {
+fn BoardSquare(sq: Square, side: Color, drag: Drag) -> impl IntoView {
     let state = expect_context::<PlayState>();
     let PlayState {
         game,
@@ -78,6 +84,15 @@ fn BoardSquare(sq: Square, side: Color) -> impl IntoView {
     };
 
     let on_click = move |_| click_square(state, sq);
+    let start_drag = move |e: ev::PointerEvent| {
+        if e.button() != 0 || !state.is_live() || !game.with(|g| g.can_select(sq)) {
+            return;
+        }
+        selected.set(Some(sq));
+        drag.at.set((e.client_x(), e.client_y()));
+        drag.from.set(Some(sq));
+    };
+    let is_drag_from = move || drag.from.get() == Some(sq);
 
     let mask = match side {
         Color::White => 0,
@@ -97,7 +112,10 @@ fn BoardSquare(sq: Square, side: Color) -> impl IntoView {
             class:capture=is_capture
             class:last_move=is_last
             class:check=is_check
+            class:drag_from=is_drag_from
+            data-square=sq.to_string()
             on:click=on_click
+            on:pointerdown=start_drag
         >
             {piece}
             {rank_label.map(|r| view! { <span class="coord rank">{r}</span> })}
@@ -154,19 +172,71 @@ fn PromotionPicker() -> impl IntoView {
     }
 }
 
+fn square_at(x: i32, y: i32) -> Option<Square> {
+    let element = document().element_from_point(x as f32, y as f32)?;
+    let square = element.closest("[data-square]").ok()??;
+    Square::from_algebraic(&square.get_attribute("data-square")?)
+}
+
+#[component]
+fn DragGhost(drag: Drag) -> impl IntoView {
+    let board = expect_context::<PlayState>().shown;
+    move || {
+        let from = drag.from.get()?;
+        let piece = board.with(|b| b.piece_at(from))?;
+        Some(view! {
+            <div
+                class="drag-ghost"
+                style:left=move || format!("{}px", drag.at.get().0)
+                style:top=move || format!("{}px", drag.at.get().1)
+            >
+                <PieceIcon piece />
+            </div>
+        })
+    }
+}
+
 #[component]
 pub fn ChessBoard() -> impl IntoView {
-    let perspective = expect_context::<PlayState>().perspective;
+    let state = expect_context::<PlayState>();
+    let perspective = state.perspective;
+    let drag = Drag {
+        from: RwSignal::new(None),
+        at: RwSignal::new((0, 0)),
+    };
+
+    let follow = window_event_listener(ev::pointermove, move |e| {
+        if drag.from.get().is_some() {
+            drag.at.set((e.client_x(), e.client_y()));
+        }
+    });
+    let drop = window_event_listener(ev::pointerup, move |e| {
+        let Some(from) = drag.from.get() else {
+            return;
+        };
+        drag.from.set(None);
+        if let Some(to) = square_at(e.client_x(), e.client_y())
+            && to != from
+        {
+            click_square(state, to);
+        }
+    });
+    on_cleanup(move || {
+        follow.remove();
+        drop.remove();
+    });
+
     let squares = move || {
         let side = perspective.get();
         Square::reading_order(side)
-            .map(|sq| view! { <BoardSquare sq side /> })
+            .map(|sq| view! { <BoardSquare sq side drag /> })
             .collect_view()
     };
     view! {
         <div class="board" on:click=|ev| ev.stop_propagation()>
             {squares}
             <PromotionPicker />
+            <DragGhost drag />
         </div>
     }
 }

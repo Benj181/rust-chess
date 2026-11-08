@@ -84,6 +84,8 @@ button:disabled {
 
 .board {
     position: relative;
+    touch-action: none;
+    user-select: none;
     display: grid;
     grid-template-columns: repeat(8, var(--square));
 }
@@ -127,6 +129,19 @@ button:disabled {
 .dark.selected  { background: color-mix(in srgb, var(--last-move) 75%, var(--dark-square)); }
 
 .square.check { background: color-mix(in srgb, var(--check) 75%, var(--dark-square)); }
+
+.square.drag_from .piece { opacity: 0.3; }
+
+.drag-ghost {
+    position: fixed;
+    z-index: 3;
+    width: var(--square);
+    height: var(--square);
+    display: grid;
+    place-items: center;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
 
 .promotion-layer {
     position: absolute;

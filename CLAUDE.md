@@ -251,7 +251,17 @@ auto-placement would skip cells taken by an explicitly placed item. Placed
 with `style:grid-column` / `style:grid-row` using the `^ mask` trick; queen
 nearest the edge (`column-reverse` from the bottom). Choices use square
 colours that contrast with the pieces (local CSS variable `--choice-bg`).
-Next: drag and drop.
+Drag and drop (`board.rs`): pointer events (mouse + touch). `Drag { from:
+RwSignal<Option<Square>>, at: RwSignal<(i32, i32)> }` is created in
+`ChessBoard` and passed to squares as a prop (split so pointer moves only
+update the ghost's `style:left/top`). `on:pointerdown` on an own piece selects
+it and starts the drag; window `pointermove` / `pointerup` listeners follow
+and drop. `square_at(x, y)` uses `element_from_point` + `closest
+("[data-square]")` (each square has `data-square="e4"`); a drop on another
+square is just `click_square(state, to)`, so promotions work for free.
+`.drag-ghost` is `position: fixed`, `pointer-events: none`; the source piece
+fades (`.drag_from`); `.board` has `touch-action: none`, `user-select: none`.
+Milestone 2 plan is complete.
 
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example
