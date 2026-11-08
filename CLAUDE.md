@@ -43,13 +43,28 @@ values outside it),
 `public/favicon.svg`, and the Leptos config in `[[workspace.metadata.leptos]]`
 in the root `Cargo.toml`.
 
-**Design reference:** `mono-chess-design.pdf` in the root ("Mono Chess"): a
-dark, flat, monospace look (Fira Code only, no shadows or gradients, 2px
-radius). Page 1 is the desktop board-and-moves screen; page 2 has the phone
-layout, colour tokens, piece styling, geometry and behaviour (move history
-navigation, keyboard keys, captures, clocks). Follow it for all UI work.
-Parts of it need later work: running clocks
-(milestone 3) and SVG pieces (milestone 5).
+**Design ("Mono Chess", the original PDF was removed; this is the summary to
+follow for all UI work):** dark, flat, monospace. Fira Code only, 13px UI,
+14px moves, 10px/500 coordinates, ligatures off, tabular numbers. No shadows,
+no gradients, 2px radius on board, pane, buttons and move highlights.
+Content max width 1080px, centred. Colours are the tokens on `:root` in
+`style/main.css` (accent = frame line, running clock, current move; dim =
+waiting clock and name, captures, icons; faint = move numbers; divider =
+rules in the pane and current-move bg; hover = buttons and moves on hover;
+last move 45% over light / 40% over dark, selected 75%; check / low time red
+75% over the king square, clock at 30 s or less).
+- Board framed by a 1px accent line 14px outside it; labels cut the line
+  with the page background. Player name in the frame line at the left
+  corner, the clock at the right corner (captures: see "Material display",
+  the user moved them to the right end).
+- Moves pane: 1px border, title "moves" set into the top border, 300px wide,
+  28px from the board. Under 760px it drops below the board and the list
+  becomes one horizontal strip.
+- Pieces (for the SVG set in milestone 5): white fill #fbf9f6 with a 2px
+  #100e0c outline; black fill #100e0c with a 1.5px #ddd6ce outline on dark
+  squares. Legal-move dot 26% of the square, rgba(16,13,10,0.45).
+- Clocks (milestone 3): running side in accent, waiting side dim, red at
+  30 s or less.
 
 **Stack:** Leptos 0.8 (SSR + hydration), leptos_axum, axum 0.8 (`ws`
 feature), tokio, cargo-leptos 0.3.x, target `wasm32-unknown-unknown`.
@@ -113,14 +128,17 @@ Docs: https://benj181.github.io/rust-chess/engine/ (built by
 
 1. **Game logic** (`engine/src/game.rs`): done. Losing on time comes with the
    server clocks in milestone 3.
-2. **Local board UI in Leptos**: in progress, see below.
+2. **Local board UI in Leptos**: done, see below.
 3. **Multiplayer**: WebSocket game rooms in Axum. The server is authoritative
    and validates every move with `Game::play_uci`. Clocks and timeouts.
 4. **AI**: evaluation plus alpha-beta search, with Zobrist hashing.
 5. **Polish**: original styling, my own SVG pieces, sounds, animations.
+   Sounds should play from a Leptos `Effect` on game changes (not in click
+   handlers), so server-sent moves make sound too; use original generated
+   sounds in `public/sounds/`, not Lichess/chess.com ones.
 6. Optional: persistence and deployment.
 
-## Current status: milestone 2, steps 1–6 done; history navigation in progress
+## Current status: milestone 2 done; milestone 3 (multiplayer) next
 
 The board is playable by clicking, with highlights.
 
