@@ -216,21 +216,30 @@ History navigation (in progress):
 - `PlayState::view_ply(ply)` clears the selection and stores `None` for the
   latest ply (so clicking the last move is live). Used by the move list and
   the nav buttons.
-- `MoveControls` bar (`justify-content: space-between`), as in the design:
-  flip, |< < > >| (disabled at start / when live), `GameMenu` (···).
-  Icons: `components/icons.rs` has SVG path constants and
+- `MoveControls` nav row (`justify-content: space-between`, dividers above
+  and below): flip, |< < > >| (disabled at start / when live). Icons:
+  `components/icons.rs` has SVG path constants and
   `Icon(path: &'static str)`; `.icon` CSS draws them with `stroke:
   currentColor`.
-- `GameMenu`: local `open` signal, toggle stops propagation, a
-  `window_event_listener(ev::click)` closes it (removed in `on_cleanup`).
-  Items: offer draw (local game: ends as agreed draw), resign (side to move),
-  both disabled when over; new game; take back; demo (debug only).
+- `ActionBar` below it (slimmer, 14px icons, `space-evenly`), only the
+  buttons needed: while playing ½ draw (one click; local game ends as agreed
+  draw) and `ResignButton`; when over + new game (`<Show fallback>`); then
+  ↶ take back; `demo` in debug builds before the first move. The user
+  rejected a ··· menu and a red "armed" double click.
+- `ResignButton`: own component with local `asking` signal and a popover
+  ("resign this game?" resign / cancel) above it; a window click listener
+  closes it, cancel has no handler (its click bubbles to the window).
 - "back to current move" button via `<Show>`, only while looking back.
 - Deselecting: a window click listener in `PlayPage`; the board stops
   propagation so square clicks still select.
-- Taught also: `<Show>`, SVG paths, window listeners + `on_cleanup`,
-  `let _ =` on an ignored `Result`.
-- Remaining: keyboard (← → ↑ ↓ and `f` for flip).
+- Keyboard: a `keydown` window listener in `PlayPage` calls
+  `press_key(state, key) -> bool` (← → step, ↑ start, ↓ live, `f` flip),
+  skipping Ctrl/Alt/Meta and calling `prevent_default` only for our keys.
+  `PlayState` has `step_back`, `step_forward`, `flip` shared by keys and
+  buttons.
+- Taught also: `<Show>` (and `fallback`), SVG paths, window listeners +
+  `on_cleanup`, `let _ =` on an ignored `Result`, `prevent_default`.
+- History navigation is done. Next: promotion picker (milestone 2 polish).
 
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example

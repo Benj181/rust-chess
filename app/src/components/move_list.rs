@@ -43,30 +43,15 @@ fn MoveRow(
 }
 
 #[component]
-fn GameMenu() -> impl IntoView {
+fn ResignButton() -> impl IntoView {
     let state = expect_context::<PlayState>();
-    let open = RwSignal::new(false);
-    let toggle = move |e: ev::MouseEvent| {
-        e.stop_propagation();
-        open.update(|o| *o = !*o);
-    };
-    let close = window_event_listener(ev::click, move |_| open.set(false));
+    let asking = RwSignal::new(false);
+    let close = window_event_listener(ev::click, move |_| asking.set(false));
     on_cleanup(move || close.remove());
 
-    let new_game = move |_| state.load(Game::new());
-    let undo = move |_| {
-        state.game.update(|g| g.undo());
-        state.go_live();
-    };
-    let cant_undo = move || state.game.with(|g| g.moves().is_empty());
-    let demo = move |_| state.load(crate::dev::demo_game());
-
-    let over = move || state.game.with(|g| g.result().is_some());
-    let draw = move |_| {
-        state.game.update(|g| {
-            let _ = g.agree_draw();
-        });
-        state.go_live();
+    let ask = move |e: ev::MouseEvent| {
+        e.stop_propagation();
+        asking.update(|a| *a = !*a);
     };
     let resign = move |_| {
         state.game.update(|g| {
@@ -76,25 +61,69 @@ fn GameMenu() -> impl IntoView {
     };
 
     view! {
-        <div class="menu-anchor">
-            <button on:click=toggle class:open=open title="more">
-                <Icon path=icons::MORE />
+        <div class="popover-anchor">
+            <button on:click=ask class:active=asking title="resign">
+                <Icon path=icons::RESIGN />
             </button>
-            <Show when=move || open.get()>
-                <div class="menu">
-                    <button on:click=draw disabled=over>
-                        "offer draw"
-                    </button>
-                    <button on:click=resign disabled=over>
-                        "resign"
-                    </button>
-                    <button on:click=new_game>"new game"</button>
-                    <button on:click=undo disabled=cant_undo>
-                        "take back"
-                    </button>
-                    {cfg!(debug_assertions)
-                        .then(|| view! { <button on:click=demo>"demo"</button> })}
+            <Show when=move || asking.get()>
+                <div class="popover">
+                    <span>"resign this game?"</span>
+                    <div class="popover-buttons">
+                        <button class="confirm" on:click=resign>
+                            "resign"
+                        </button>
+                        <button>"cancel"</button>
+                    </div>
                 </div>
+            </Show>
+        </div>
+    }
+}
+
+#[component]
+fn ActionBar() -> impl IntoView {
+    let state = expect_context::<PlayState>();
+    let playing = move || state.game.with(|g| g.result().is_none());
+    let cant_take_back = move || state.game.with(|g| g.moves().is_empty());
+    let show_demo = move || cfg!(debug_assertions) && cant_take_back();
+
+    let take_back = move |_| {
+        state.game.update(|g| g.undo());
+        state.go_live();
+    };
+    let draw = move |_| {
+        state.game.update(|g| {
+            let _ = g.agree_draw();
+        });
+        state.go_live();
+    };
+    let new_game = move |_| state.load(Game::new());
+    let demo = move |_| state.load(crate::dev::demo_game());
+
+    view! {
+        <div class="move-actions">
+            <Show
+                when=playing
+                fallback=move || {
+                    view! {
+                        <button on:click=new_game title="new game">
+                            <Icon path=icons::NEW_GAME />
+                        </button>
+                    }
+                }
+            >
+                <button on:click=draw title="offer draw">
+                    <Icon path=icons::DRAW />
+                </button>
+                <ResignButton />
+            </Show>
+            <button on:click=take_back disabled=cant_take_back title="take back">
+                <Icon path=icons::TAKE_BACK />
+            </button>
+            <Show when=show_demo>
+                <button on:click=demo title="load demo game">
+                    "demo"
+                </button>
             </Show>
         </div>
     }
@@ -103,14 +132,12 @@ fn GameMenu() -> impl IntoView {
 #[component]
 fn MoveControls() -> impl IntoView {
     let state = expect_context::<PlayState>();
-    let flip = move |_| state.perspective.update(|p| *p = p.opposite());
-
-    let ply = state.shown_ply;
+    let flip = move |_| state.flip();
     let first = move |_| state.view_ply(0);
-    let prev = move |_| state.view_ply(ply.get().saturating_sub(1));
-    let next = move |_| state.view_ply(ply.get() + 1);
+    let prev = move |_| state.step_back();
+    let next = move |_| state.step_forward();
     let last = move |_| state.go_live();
-    let at_start = move || ply.get() == 0;
+    let at_start = move || state.shown_ply.get() == 0;
     let at_end = move || state.is_live();
 
     view! {
@@ -130,7 +157,6 @@ fn MoveControls() -> impl IntoView {
             <button on:click=last disabled=at_end title="last move">
                 <Icon path=icons::LAST />
             </button>
-            <GameMenu />
         </div>
     }
 }
@@ -164,6 +190,7 @@ pub fn MoveList() -> impl IntoView {
                 </button>
             </Show>
             <MoveControls />
+            <ActionBar />
         </div>
     }
 }

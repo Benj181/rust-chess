@@ -191,40 +191,60 @@ button:disabled {
     scrollbar-color: var(--pane-border) transparent;
 }
 
-button.open {
-    background: var(--hover);
-    color: var(--text);
-}
-
-.menu-anchor { position: relative; }
-
-.menu {
-    position: absolute;
-    right: 0;
-    bottom: calc(100% + 6px);
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 140px;
-    padding: 4px;
-    background: var(--bg);
-    border: 1px solid var(--pane-border);
-    border-radius: 2px;
-}
-.menu button { text-align: left; }
-
 .back-to-live {
     align-self: center;
     margin-bottom: 8px;
     color: var(--accent);
 }
 
+.move-actions {
+    display: flex;
+    justify-content: space-evenly;
+    padding-top: 4px;
+}
+.move-actions button { padding: 2px 6px; }
+.move-actions .icon {
+    width: 14px;
+    height: 14px;
+}
+
+button.active {
+    background: var(--hover);
+    color: var(--text);
+}
+
+.popover-anchor { position: relative; }
+
+.popover {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    white-space: nowrap;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--pane-border);
+    border-radius: 2px;
+}
+.popover-buttons {
+    display: flex;
+    gap: 6px;
+}
+.popover .confirm { color: var(--accent); }
+
 .move-controls {
     display: flex;
     justify-content: space-between;
     gap: 6px;
-    padding-top: 8px;
+    padding: 8px 0 4px;
     border-top: 1px solid var(--divider);
+    border-bottom: 1px solid var(--divider);
 }
 
 @media (max-width: 760px) {

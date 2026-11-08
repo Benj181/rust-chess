@@ -54,6 +54,18 @@ impl PlayState {
         self.viewing.set((ply < latest).then_some(ply));
     }
 
+    pub fn step_back(self) {
+        self.view_ply(self.shown_ply.get().saturating_sub(1));
+    }
+
+    pub fn step_forward(self) {
+        self.view_ply(self.shown_ply.get() + 1);
+    }
+
+    pub fn flip(self) {
+        self.perspective.update(|p| *p = p.opposite());
+    }
+
     pub fn go_live(self) {
         self.selected.set(None);
         self.viewing.set(None);
