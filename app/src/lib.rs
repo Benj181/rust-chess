@@ -1,6 +1,7 @@
 mod components;
 mod dev;
 mod pages;
+mod state;
 
 use leptos::prelude::*;
 use leptos_meta::{MetaTags, Stylesheet, Title, provide_meta_context};

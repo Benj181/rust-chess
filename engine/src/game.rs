@@ -8,7 +8,7 @@ use crate::{
     piece::{Color, PieceKind},
     square::Square,
 };
-use std::fmt;
+use std::{cmp::Ordering, fmt};
 
 /// How a game ended.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -111,6 +111,17 @@ impl Game {
     #[must_use]
     pub const fn board(&self) -> &Board {
         &self.board
+    }
+
+    /// The position after `ply` half-moves: 0 is the start, `moves().len()`
+    /// is the current position, past that is `None`.
+    #[must_use]
+    pub fn board_at(&self, ply: usize) -> Option<&Board> {
+        match ply.cmp(&self.history.len()) {
+            Ordering::Less => self.history.get(ply),
+            Ordering::Equal => Some(&self.board),
+            Ordering::Greater => None,
+        }
     }
 
     /// The moves played so far, oldest first.

@@ -120,7 +120,7 @@ Docs: https://benj181.github.io/rust-chess/engine/ (built by
 5. **Polish**: original styling, my own SVG pieces, sounds, animations.
 6. Optional: persistence and deployment.
 
-## Current status: milestone 2, steps 1–6 done; history navigation next
+## Current status: milestone 2, steps 1–6 done; history navigation in progress
 
 The board is playable by clicking, with highlights.
 
@@ -198,9 +198,23 @@ loaded from Google Fonts in `lib.rs`'s `shell`. `app/src/dev.rs` has
 Kasparov–Topalov 1999 as UCI; a "demo" button (debug builds only, via
 `cfg!(debug_assertions)`) loads it.
 
-Next: history navigation (|< < > >| buttons, clicking a move, arrow keys,
-current-move highlight). Needs a "viewing ply" signal and showing
-`history` boards; moves are only allowed at the latest position.
+History navigation (in progress):
+- State is shared through context: `app/src/state.rs` has `PlayState`
+  (`Copy` struct of signals `game`, `selected`, `perspective`,
+  `viewing: Option<usize>` (None = live, `Some(k)` = after k plies) and
+  memos `shown_ply`, `shown: Memo<Board>`, `shown_move`). `PlayState::provide()`
+  in `PlayPage`; components call `expect_context::<PlayState>()` and
+  destructure. Methods: `is_live`, `go_live`, `load(game)`.
+- Engine: `Game::board_at(ply) -> Option<&Board>` (match on `cmp`).
+- Board draws `shown`/`shown_move`; `click_square` returns early unless live.
+- Move list: `MoveRow(index, white, black, on_pick, current)` renders two
+  `MoveCell(san, ply, on_pick: Callback<usize>, current: Signal<usize>)`
+  (`#[prop(into)]`); leaves keep props + callbacks, page state is context.
+  `.move.current` / `.move:hover` CSS. Clicking sets `viewing`.
+- Taught: `Callback`, `#[prop(into)]`, `Memo`, context, `.get` vs `.with`,
+  why props must be owned (`'static`), store the index and derive the board.
+- Remaining: ⏮ ◀ ▶ ⏭ buttons plus "back to current move" (only while looking
+  back), arrow keys.
 
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example

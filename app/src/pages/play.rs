@@ -1,9 +1,7 @@
 use crate::components::board::ChessBoard;
 use crate::components::move_list::MoveList;
-use engine::{
-    game::{Game, GameResult},
-    piece::Color,
-};
+use crate::state::PlayState;
+use engine::game::{Game, GameResult};
 use leptos::prelude::*;
 
 fn status_text(game: &Game) -> String {
@@ -16,20 +14,15 @@ fn status_text(game: &Game) -> String {
 
 #[component]
 pub fn PlayPage() -> impl IntoView {
-    let game = RwSignal::new(Game::new());
-    let selected = RwSignal::new(None);
-    let status = move || game.with(status_text);
-    let perspective = RwSignal::new(Color::White);
-    let de_select = move |_| selected.set(None);
-
+    let state = PlayState::provide();
     view! {
-        <div class="play" on:click=de_select>
+        <div class="play" on:click=move |_| state.selected.set(None)>
             <div class="board-frame">
                 <span class="frame-label top">"rust-chess"</span>
-                <ChessBoard game selected perspective />
-                <span class="frame-label bottom">{status}</span>
+                <ChessBoard />
+                <span class="frame-label bottom">{move || state.game.with(status_text)}</span>
             </div>
-            <MoveList game selected perspective />
+            <MoveList />
         </div>
     }
 }

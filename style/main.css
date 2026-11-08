@@ -161,7 +161,16 @@ button:disabled {
 }
 
 .move-number { color: var(--faint); }
-.move { padding: 0 6px; }
+.move {
+    padding: 0 6px;
+    border-radius: 2px;
+    cursor: pointer;
+}
+.move:hover { background: var(--hover); }
+.move.current {
+    color: var(--accent);
+    background: var(--divider);
+}
 
 .move-rows {
     flex: 1;

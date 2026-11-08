@@ -1,39 +1,59 @@
-use engine::{game::Game, piece::Color, square::Square};
+use crate::state::PlayState;
+use engine::game::Game;
 use leptos::prelude::*;
 
 #[component]
-fn MoveRow(number: usize, white: Option<String>, black: Option<String>) -> impl IntoView {
+fn MoveCell(
+    san: Option<String>,
+    ply: usize,
+    #[prop(into)] on_pick: Callback<usize>,
+    #[prop(into)] current: Signal<usize>,
+) -> impl IntoView {
+    san.map(|san| {
+        view! {
+            <span
+                class="move"
+                on:click=move |_| on_pick.run(ply)
+                class:current=move || current.get() == ply
+            >
+                {san}
+            </span>
+        }
+    })
+}
+
+#[component]
+fn MoveRow(
+    index: usize,
+    white: Option<String>,
+    black: Option<String>,
+    #[prop(into)] on_pick: Callback<usize>,
+    #[prop(into)] current: Signal<usize>,
+) -> impl IntoView {
+    let number = index + 1;
+    let ply = 2 * index + 1;
     view! {
         <div class="move-row">
             <span class="move-number">{number}"."</span>
-            <span class="move">{white}</span>
-            <span class="move">{black}</span>
+            <MoveCell san=white ply on_pick current />
+            <MoveCell san=black ply=ply + 1 on_pick current />
         </div>
     }
 }
 
 #[component]
-fn MoveControls(
-    game: RwSignal<Game>,
-    selected: RwSignal<Option<Square>>,
-    perspective: RwSignal<Color>,
-) -> impl IntoView {
-    let new_game = move |_| {
-        game.set(Game::new());
-        selected.set(None);
-    };
+fn MoveControls() -> impl IntoView {
+    let state = expect_context::<PlayState>();
+    let new_game = move |_| state.load(Game::new());
     let undo = move |_| {
-        game.update(|g| g.undo());
-        selected.set(None);
+        state.game.update(|g| g.undo());
+        state.go_live();
     };
-    let cant_undo = move || game.with(|g| g.moves().is_empty());
-    let flip = move |_| perspective.update(|p| *p = p.opposite());
-    let demo = move |_| {
-        game.set(crate::dev::demo_game());
-        selected.set(None);
-    };
-    let demo_button = cfg!(debug_assertions).then(|| view! { <button on:click=demo>"demo"</button> });
-
+    let cant_undo = move || state.game.with(|g| g.moves().is_empty());
+    let flip = move |_| state.perspective.update(|p| *p = p.opposite());
+    let demo = move |_| state.load(crate::dev::demo_game());
+    let demo_button =
+        cfg!(debug_assertions).then(|| view! { <button on:click=demo>"demo"</button> });
     view! {
         <div class="move-controls">
             <button on:click=new_game>"new game"</button>
@@ -47,21 +67,19 @@ fn MoveControls(
 }
 
 #[component]
-pub fn MoveList(
-    game: RwSignal<Game>,
-    selected: RwSignal<Option<Square>>,
-    perspective: RwSignal<Color>,
-) -> impl IntoView {
+pub fn MoveList() -> impl IntoView {
+    let state = expect_context::<PlayState>();
+    let on_pick = move |p| state.viewing.set(Some(p));
+    let current = state.shown_ply;
     let rows = move || {
-        game.with(|g| {
+        state.game.with(|g| {
             g.san_moves()
                 .chunks(2)
                 .enumerate()
-                .map(|(i, pair)| {
-                    let number = i + 1;
+                .map(|(index, pair)| {
                     let white = pair.first().cloned();
                     let black = pair.get(1).cloned();
-                    view! { <MoveRow number white black /> }
+                    view! { <MoveRow index white black on_pick current /> }
                 })
                 .collect_view()
         })
@@ -71,7 +89,7 @@ pub fn MoveList(
         <div class="move-pane">
             <span class="pane-title">"moves"</span>
             <div class="move-rows">{rows}</div>
-            <MoveControls game selected perspective />
+            <MoveControls />
         </div>
     }
 }
