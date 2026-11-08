@@ -1,4 +1,4 @@
-use engine::game::Game;
+use engine::{game::Game, piece::Color, square::Square};
 use leptos::prelude::*;
 
 #[component]
@@ -13,10 +13,39 @@ fn MoveRow(number: usize, white: Option<String>, black: Option<String>) -> impl 
 }
 
 #[component]
-fn MoveControls() -> impl IntoView {}
+fn MoveControls(
+    game: RwSignal<Game>,
+    selected: RwSignal<Option<Square>>,
+    perspective: RwSignal<Color>,
+) -> impl IntoView {
+    let new_game = move |_| {
+        game.set(Game::new());
+        selected.set(None);
+    };
+    let undo = move |_| {
+        game.update(|g| g.undo());
+        selected.set(None);
+    };
+    let cant_undo = move || game.with(|g| g.moves().is_empty());
+    let flip = move |_| perspective.update(|p| *p = p.opposite());
+
+    view! {
+        <div class="move-controls">
+            <button on:click=new_game>"new game"</button>
+            <button on:click=undo disabled=cant_undo>
+                "undo"
+            </button>
+            <button on:click=flip>"flip"</button>
+        </div>
+    }
+}
 
 #[component]
-pub fn MoveList(game: RwSignal<Game>) -> impl IntoView {
+pub fn MoveList(
+    game: RwSignal<Game>,
+    selected: RwSignal<Option<Square>>,
+    perspective: RwSignal<Color>,
+) -> impl IntoView {
     let rows = move || {
         game.with(|g| {
             g.moves()
@@ -31,10 +60,12 @@ pub fn MoveList(game: RwSignal<Game>) -> impl IntoView {
                 .collect_view()
         })
     };
+
     view! {
         <div class="move-pane">
             <p>"moves"</p>
             <div>{rows}</div>
+            <MoveControls game selected perspective />
         </div>
     }
 }

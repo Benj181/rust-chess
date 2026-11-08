@@ -114,7 +114,7 @@ Docs: https://benj181.github.io/rust-chess/engine/ (built by
 5. **Polish**: original styling, my own SVG pieces, sounds, animations.
 6. Optional: persistence and deployment.
 
-## Current status: milestone 2, steps 1–5 and 6a–6c done; 6d next
+## Current status: milestone 2, steps 1–5 and 6a–6d done; 6e (layout) next
 
 The board is playable by clicking, with highlights.
 
@@ -172,8 +172,15 @@ the left file and file labels on the bottom rank (`sq.file() ^ mask == 0`),
 as `.coord` spans positioned absolutely. `PlayPage` owns
 `perspective: RwSignal<Color>` and a "flip" button.
 
+`components/move_list.rs`: `MoveList(game, selected, perspective)` renders a
+`.move-pane` with rows from `moves().chunks(2).enumerate()` (all inside
+`game.with`), each a `MoveRow(number, white: Option<String>, black)`, then
+`MoveControls` (new game, undo, flip; signals prop-drilled through
+`MoveList`). `PlayPage` wraps everything in a `main` whose `on:click`
+deselects; the board's div calls `ev.stop_propagation()` (event bubbling).
+
 Step 6 parts: 6a status line (done), 6b new game / undo (done), 6c flip
-(done),
+(done), 6d move list and controls (done),
 6d move list (UCI via `Move` `Display`), 6e layout per the design.
 
 Milestone 2 plan:
