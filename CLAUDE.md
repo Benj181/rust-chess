@@ -309,3 +309,24 @@ Milestone 2 plan:
    `Display` for `Move` printing UCI; SAN is a later engine step); New game,
    Undo and Flip buttons.
 7. **Optional polish:** promotion picker, drag and drop.
+
+## Milestone 3: multiplayer (starting)
+
+Plan:
+1. Echo WebSocket on the server (`/ws`).
+2. Message types shared by server and browser (serde, JSON).
+3. Game rooms on the server; each owns a `Game` and validates moves with
+   `play_uci`.
+4. The browser connects: the board sends moves and receives positions.
+5. Lobby: create a game, share a link, join.
+6. Clocks and timeouts.
+
+Where we stopped: concept 1 (HTTP request/response vs a WebSocket as an
+open two-way pipe; Axum's `WebSocketUpgrade`, `on_upgrade`, `recv`/`send`,
+a short intro to `async`/`.await`) has been explained. Step 1 is the user's
+to write in `server/src/main.rs`: `ws_handler(ws: WebSocketUpgrade)`
+returning `ws.on_upgrade(handle_socket)`, an echo loop with
+`while let Some(Ok(msg)) = socket.recv().await`, and `.route("/ws",
+get(ws_handler))` before the Leptos routes. When it compiles, show how to
+test it from the browser console (`new WebSocket("ws://127.0.0.1:3000/ws")`)
+before any frontend code.
