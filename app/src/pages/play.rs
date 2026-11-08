@@ -18,6 +18,7 @@ fn press_key(state: PlayState, key: &str) -> bool {
         "ArrowRight" => state.step_forward(),
         "ArrowUp" => state.view_ply(0),
         "ArrowDown" => state.go_live(),
+        "Escape" => state.cancel_promotion(),
         "f" => state.flip(),
         _ => return false,
     }
@@ -27,7 +28,7 @@ fn press_key(state: PlayState, key: &str) -> bool {
 #[component]
 pub fn PlayPage() -> impl IntoView {
     let state = PlayState::provide();
-    let deselect = window_event_listener(ev::click, move |_| state.selected.set(None));
+    let deselect = window_event_listener(ev::click, move |_| state.cancel_promotion());
     let keys = window_event_listener(ev::keydown, move |e| {
         let modified = e.ctrl_key() || e.meta_key() || e.alt_key();
         if !modified && press_key(state, &e.key()) {

@@ -1,4 +1,10 @@
-use engine::{board::Board, game::Game, moves::Move, piece::Color, square::Square};
+use engine::{
+    board::Board,
+    game::Game,
+    moves::Move,
+    piece::{Color, PieceKind},
+    square::Square,
+};
 use leptos::prelude::*;
 
 #[derive(Clone, Copy)]
@@ -7,6 +13,7 @@ pub struct PlayState {
     pub selected: RwSignal<Option<Square>>,
     pub perspective: RwSignal<Color>,
     pub viewing: RwSignal<Option<usize>>,
+    pub promoting: RwSignal<Option<(Square, Square)>>,
     pub shown_ply: Memo<usize>,
     pub shown: Memo<Board>,
     pub shown_move: Memo<Option<Move>>,
@@ -36,6 +43,7 @@ impl PlayState {
             selected: RwSignal::new(None),
             perspective: RwSignal::new(Color::White),
             viewing,
+            promoting: RwSignal::new(None),
             shown_ply,
             shown,
             shown_move,
@@ -50,8 +58,24 @@ impl PlayState {
 
     pub fn view_ply(self, ply: usize) {
         let latest = self.game.with(|g| g.moves().len());
-        self.selected.set(None);
+        self.cancel_promotion();
         self.viewing.set((ply < latest).then_some(ply));
+    }
+
+    pub fn promote(self, kind: PieceKind) {
+        if let Some((from, to)) = self.promoting.get()
+            && let Some(mv) = self.game.with(|g| g.find_move(from, to, Some(kind)))
+        {
+            self.game.update(|g| {
+                let _ = g.play(mv);
+            });
+        }
+        self.cancel_promotion();
+    }
+
+    pub fn cancel_promotion(self) {
+        self.promoting.set(None);
+        self.selected.set(None);
     }
 
     pub fn step_back(self) {
@@ -67,7 +91,7 @@ impl PlayState {
     }
 
     pub fn go_live(self) {
-        self.selected.set(None);
+        self.cancel_promotion();
         self.viewing.set(None);
     }
 

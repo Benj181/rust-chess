@@ -83,6 +83,7 @@ button:disabled {
 .frame-label.bottom { bottom: 0; transform: translateY(50%);  color: var(--dim); }
 
 .board {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(8, var(--square));
 }
@@ -126,6 +127,37 @@ button:disabled {
 .dark.selected  { background: color-mix(in srgb, var(--last-move) 75%, var(--dark-square)); }
 
 .square.check { background: color-mix(in srgb, var(--check) 75%, var(--dark-square)); }
+
+.promotion-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(8, var(--square));
+    grid-template-rows: repeat(8, var(--square));
+    background: color-mix(in srgb, var(--bg) 60%, transparent);
+}
+.promotion {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 2px;
+}
+.promotion.from-bottom { flex-direction: column-reverse; }
+.promotion-choice {
+    width: var(--square);
+    height: var(--square);
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 0;
+    --choice-bg: var(--light-square);
+    background: var(--choice-bg);
+}
+.promotion.white .promotion-choice { --choice-bg: var(--dark-square); }
+.promotion-choice:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--last-move) 60%, var(--choice-bg));
+}
 
 .coord {
     position: absolute;

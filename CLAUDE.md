@@ -239,7 +239,19 @@ History navigation (in progress):
   buttons.
 - Taught also: `<Show>` (and `fallback`), SVG paths, window listeners +
   `on_cleanup`, `let _ =` on an ignored `Result`, `prevent_default`.
-- History navigation is done. Next: promotion picker (milestone 2 polish).
+- History navigation is done.
+
+Promotion picker: `PlayState.promoting: Option<(from, to)>`; `click_square`
+opens it when only the promotion move exists; `promote(kind)` plays it,
+`cancel_promotion()` clears promoting + selected and is used by every
+deselect (`view_ply`, `go_live`, window click, `Escape`). `PromotionPicker`
+in `board.rs` renders on a `.promotion-layer` (an absolutely positioned 8×8
+grid over the board, dimmed with `color-mix(.. transparent)`) because grid
+auto-placement would skip cells taken by an explicitly placed item. Placed
+with `style:grid-column` / `style:grid-row` using the `^ mask` trick; queen
+nearest the edge (`column-reverse` from the bottom). Choices use square
+colours that contrast with the pieces (local CSS variable `--choice-bg`).
+Next: drag and drop.
 
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example
