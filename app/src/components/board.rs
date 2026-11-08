@@ -115,5 +115,9 @@ pub fn ChessBoard(
             .map(|sq| view! { <BoardSquare sq game selected side /> })
             .collect_view()
     };
-    view! { <div class="board">{squares}</div> }
+    view! {
+        <div class="board" on:click=|ev| ev.stop_propagation()>
+            {squares}
+        </div>
+    }
 }
