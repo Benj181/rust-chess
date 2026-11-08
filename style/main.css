@@ -16,6 +16,8 @@
 
     --piece-white: #fbf9f6;
     --piece-black: #100e0c;
+
+    --square: min(64px, (100vw - 62px) / 8);
 }
 
 body {
@@ -71,12 +73,12 @@ button:disabled {
 
 .board {
     display: grid;
-    grid-template-columns: repeat(8, 64px);
+    grid-template-columns: repeat(8, var(--square));
 }
 
 .square {
-    width: 64px;
-    height: 64px;
+    width: var(--square);
+    height: var(--square);
     display: grid;
     place-items: center;
     position: relative;
@@ -85,7 +87,7 @@ button:disabled {
 .light { background: var(--light-square); }
 .dark  { background: var(--dark-square); }
 
-.piece { font-size: 48px; line-height: 1; }
+.piece { font-size: calc(var(--square) * 0.75); line-height: 1; }
 .piece.white { color: var(--piece-white); }
 .piece.black { color: var(--piece-black); }
 
@@ -130,7 +132,7 @@ button:disabled {
 .move-pane {
     position: relative;
     width: 300px;
-    height: calc(512px + 2 * 15px);
+    height: calc(8 * var(--square) + 2 * 15px);
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -174,4 +176,36 @@ button:disabled {
     gap: 6px;
     padding-top: 8px;
     border-top: 1px solid var(--divider);
+}
+
+@media (max-width: 760px) {
+    body {
+        padding: 16px;
+        box-sizing: border-box;
+    }
+
+    .play {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .move-pane {
+        width: auto;
+        height: auto;
+        contain: inline-size;
+    }
+
+    .move-rows {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 6px;
+    }
+
+    .move-row {
+        display: flex;
+        flex-shrink: 0;
+        gap: 6px;
+    }
 }

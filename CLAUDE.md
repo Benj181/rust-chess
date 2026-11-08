@@ -120,7 +120,7 @@ Docs: https://benj181.github.io/rust-chess/engine/ (built by
 5. **Polish**: original styling, my own SVG pieces, sounds, animations.
 6. Optional: persistence and deployment.
 
-## Current status: milestone 2, steps 1–5 and 6a–6d done; 6e (layout) next
+## Current status: milestone 2, steps 1–6 done; history navigation next
 
 The board is playable by clicking, with highlights.
 
@@ -185,9 +185,22 @@ as `.coord` spans positioned absolutely. `PlayPage` owns
 `MoveList`). `PlayPage` wraps everything in a `main` whose `on:click`
 deselects; the board's div calls `ev.stop_propagation()` (event bubbling).
 
-Step 6 parts: 6a status line (done), 6b new game / undo (done), 6c flip
-(done), 6d move list and controls (done),
-6d move list (UCI via `Move` `Display`), 6e layout per the design.
+Step 6 parts, all done: 6a status line, 6b new game / undo, 6c flip, 6d
+move list (SAN via `Game::san_moves`) and controls, 6e layout.
+
+Layout (CSS written by Claude, see work style): `.play` flex row (column
+under 760px); `.board-frame` with labels cut into the 1px accent line
+("rust-chess" top, the status text bottom); `--square` token
+(`min(64px, (100vw - 62px) / 8)`) sizes the board, pieces and pane; the
+`.move-pane` (300px, title in the border, scrolling `.move-rows`,
+`.move-controls` bar) becomes a horizontal strip on phones. Fira Code is
+loaded from Google Fonts in `lib.rs`'s `shell`. `app/src/dev.rs` has
+Kasparov–Topalov 1999 as UCI; a "demo" button (debug builds only, via
+`cfg!(debug_assertions)`) loads it.
+
+Next: history navigation (|< < > >| buttons, clicking a move, arrow keys,
+current-move highlight). Needs a "viewing ply" signal and showing
+`history` boards; moves are only allowed at the latest position.
 
 Milestone 2 plan:
 1. **Structure:** split `app/src/lib.rs` into modules (for example
