@@ -63,8 +63,8 @@ pub fn MoveList(
 
     view! {
         <div class="move-pane">
-            <p>"moves"</p>
-            <div>{rows}</div>
+            <span class="pane-title">"moves"</span>
+            <div class="move-rows">{rows}</div>
             <MoveControls game selected perspective />
         </div>
     }

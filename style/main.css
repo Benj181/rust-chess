@@ -25,11 +25,36 @@ body {
     place-items: center;
     background: var(--bg);
     color: var(--text);
-    font-family: "Fira Code", system-ui, sans-serif;
+    font-family: "Fira Code", monospace;
+    font-size: 13px;
+    font-variant-ligatures: none;
+}
+
+button {
+    font: inherit;
+    color: var(--dim);
+    background: none;
+    border: none;
+    border-radius: 2px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+button:hover:not(:disabled) {
+    background: var(--hover);
+    color: var(--text);
+}
+button:disabled {
+    color: var(--faint);
+    cursor: default;
 }
 
 h1 {
     color: var(--accent);
+}
+
+.play {
+    display: flex;
+    gap: 28px;
 }
 
 .board {
@@ -79,7 +104,6 @@ h1 {
 
 .coord {
     position: absolute;
-    font-family: "Fira Code", monospace;
     font-size: 10px;
     font-weight: 500;
     line-height: 1;
@@ -90,3 +114,53 @@ h1 {
 
 .light .coord { color: var(--dark-square); }
 .dark .coord  { color: var(--light-square); }
+
+.move-pane {
+    position: relative;
+    width: 300px;
+    height: 512px;
+    align-self: flex-end;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding: 16px 12px 8px;
+    border: 1px solid var(--pane-border);
+    border-radius: 2px;
+}
+
+.pane-title {
+    position: absolute;
+    top: 0;
+    left: 12px;
+    transform: translateY(-50%);
+    padding: 0 6px;
+    background: var(--bg);
+    color: var(--dim);
+    font-size: 13px;
+}
+
+.move-row {
+    display: grid;
+    grid-template-columns: 32px 1fr 1fr;
+    font-size: 14px;
+    line-height: 25px;
+    font-variant-numeric: tabular-nums;
+}
+
+.move-number { color: var(--faint); }
+.move { padding: 0 6px; }
+
+.move-rows {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--pane-border) transparent;
+}
+
+.move-controls {
+    display: flex;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid var(--divider);
+}

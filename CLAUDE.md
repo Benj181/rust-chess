@@ -22,6 +22,9 @@ a learning project. The chess engine is mostly done; the main goal now is to
   a throwaway example, not in project files.
 - **Git:** commit straight to `main`, never on a feature branch. Don't push
   unless I ask. End commit messages with the `Co-Authored-By` line.
+- **CSS: you write it.** I'm not interested in learning CSS. Make CSS changes
+  yourself in small steps and briefly explain how each works. Rust and
+  Leptos stay hands-on for me.
 - I edit in Neovim (with neo-tree) while you work, so files can change on disk
   under you. Re-read before editing, and don't overwrite my in-progress code
   without saying so.

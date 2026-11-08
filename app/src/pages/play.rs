@@ -23,10 +23,12 @@ pub fn PlayPage() -> impl IntoView {
     let de_select = move |_| selected.set(None);
 
     view! {
-        <div on:click=de_select>
-            <h1>"rust-chess"</h1>
-            <p>{status}</p>
-            <ChessBoard game selected perspective />
+        <div class="play" on:click=de_select>
+            <div class="board-column">
+                <h1>"rust-chess"</h1>
+                <p>{status}</p>
+                <ChessBoard game selected perspective />
+            </div>
             <MoveList game selected perspective />
         </div>
     }
