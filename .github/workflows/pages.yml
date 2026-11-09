@@ -1,4 +1,4 @@
-name: Docs
+name: Pages
 
 on:
   push:
@@ -20,16 +20,29 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk
       - name: Build docs
         env:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --no-deps -p engine
-      - name: Add index redirect
-        run: echo '<meta http-equiv="refresh" content="0; url=engine/index.html">' > target/doc/index.html
+      - name: Build the standalone app
+        working-directory: standalone
+        run: trunk build --release
+      - name: Combine app and docs
+        run: |
+          mkdir site
+          cp -r target/doc/. site/
+          cp -r standalone/dist/. site/
+          rm -f site/.lock site/.trunk-lock
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: target/doc
+          path: site
 
   deploy:
     needs: build

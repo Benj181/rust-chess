@@ -14,3 +14,4 @@ leptos_axum = { workspace = true, optional = true }
 default = []
 hydrate = ["leptos/hydrate"]
 ssr = ["leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:leptos_axum"]
+csr = ["leptos/csr"]

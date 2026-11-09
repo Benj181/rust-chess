@@ -34,9 +34,19 @@ a learning project. The chess engine is mostly done; the main goal now is to
 | Crate | Purpose |
 |---|---|
 | `engine/` | Chess logic: bitboards, FEN, move generation, `Game`. No web deps. |
-| `app/` | Leptos components and routes, shared by server and browser (features `ssr` / `hydrate`). |
-| `frontend/` | WASM entry point: `hydrate()` mounts `App` in the browser. |
+| `app/` | Leptos components and routes, shared by both versions (features `ssr` / `hydrate` / `csr`). |
+| `frontend/` | Server version's browser half: `hydrate()` hydrates `App`. |
 | `server/` | Axum binary: serves SSR pages, static files and (later) WebSockets. |
+| `standalone/` | Standalone (serverless, CSR) version: `main()` calls `mount_to_body(App)`. Built with Trunk (`index.html`, `Trunk.toml` with `public_url = "/rust-chess/"`), output in `standalone/dist/` (gitignored). Hosted on GitHub Pages. |
+
+Two versions of the same `app`: **standalone** (CSR, static files, for
+playing the AI, deployed to GitHub Pages) and **server** (SSR + hydration via
+cargo-leptos, for multiplayer, run locally). `app` features: `ssr`,
+`hydrate`, `csr`. `shell` is `#[cfg(feature = "ssr")]` and writes the
+`<head>` (fonts, `<link id="leptos" href="/pkg/rust-chess.css">`); the
+standalone `index.html` has the same head via `data-trunk` links. `App` uses
+`<Router base=BASE>` with `const BASE = if cfg!(feature = "csr")
+{ "/rust-chess" } else { "" }`.
 
 Also: `style/main.css` (all colours are design tokens on `:root`; no hex
 values outside it),
@@ -63,14 +73,17 @@ last move 45% over light / 40% over dark, selected 75%; check / low time red
 - Pieces (for the SVG set in milestone 5): white fill #fbf9f6 with a 2px
   #100e0c outline; black fill #100e0c with a 1.5px #ddd6ce outline on dark
   squares. Legal-move dot 26% of the square, rgba(16,13,10,0.45).
-- Clocks (milestone 3): running side in accent, waiting side dim, red at
+- Clocks (milestone 5): running side in accent, waiting side dim, red at
   30 s or less.
 
 **Stack:** Leptos 0.8 (SSR + hydration), leptos_axum, axum 0.8 (`ws`
 feature), tokio, cargo-leptos 0.3.x, target `wasm32-unknown-unknown`.
 
 **Commands:**
-- `cargo leptos watch`: dev server at http://127.0.0.1:3000 with auto-reload.
+- `cargo leptos watch`: server version at http://127.0.0.1:3000 with auto-reload.
+- `cd standalone && trunk serve`: standalone version at
+  http://127.0.0.1:8080/rust-chess/ (Trunk must run from `standalone/`; the
+  root `Cargo.toml` is a virtual workspace manifest).
 - `cargo leptos build`: full build.
 - `cargo clippy -p engine --all-targets`: must be clean.
 - `cargo test -p engine`: perft plus doctests.
@@ -121,24 +134,32 @@ Idioms used throughout:
 Known simplification: threefold compares the en passant square even when no
 capture is possible (Lichess only counts it when it is). Fine for now.
 
-Docs: https://benj181.github.io/rust-chess/engine/ (built by
-`.github/workflows/docs.yml` on every push to `main`).
+Site: https://benj181.github.io/rust-chess/ (the standalone game) and
+https://benj181.github.io/rust-chess/engine/ (engine docs), both built by
+`.github/workflows/pages.yml` on every push to `main` (Trunk release build +
+`cargo doc`, copied into one `site/` folder; the app's `index.html` wins).
 
 ## Roadmap
 
 1. **Game logic** (`engine/src/game.rs`): done. Losing on time comes with the
-   server clocks in milestone 3.
+   server clocks in milestone 5.
 2. **Local board UI in Leptos**: done, see below.
-3. **Multiplayer**: WebSocket game rooms in Axum. The server is authoritative
-   and validates every move with `Game::play_uci`. Clocks and timeouts.
-4. **AI**: evaluation plus alpha-beta search, with Zobrist hashing.
-5. **Polish**: original styling, my own SVG pieces, sounds, animations.
+3. **Standalone build + GitHub Pages** (the user has no server to rent, so
+   the AI version is the one that gets hosted): done.
+4. **AI**: evaluation plus alpha-beta search, with Zobrist hashing, running
+   in the browser in the standalone version (later in a Web Worker or with a
+   time budget so the page doesn't freeze). Needs an "opponent" abstraction
+   in `app` (local / AI / online) where the other side's moves come from.
+5. **Multiplayer** (for fun, played locally / on the LAN): WebSocket game
+   rooms in Axum. The server is authoritative and validates every move with
+   `Game::play_uci`. Clocks and timeouts.
+6. **Polish**: original styling, my own SVG pieces, sounds, animations.
    Sounds should play from a Leptos `Effect` on game changes (not in click
    handlers), so server-sent moves make sound too; use original generated
    sounds in `public/sounds/`, not Lichess/chess.com ones.
-6. Optional: persistence and deployment.
+7. Optional: persistence.
 
-## Current status: milestone 2 done; milestone 3 (multiplayer) next
+## Current status: milestones 2 and 3 done; AI (milestone 4) next
 
 The board is playable by clicking, with highlights.
 
@@ -310,7 +331,7 @@ Milestone 2 plan:
    Undo and Flip buttons.
 7. **Optional polish:** promotion picker, drag and drop.
 
-## Milestone 3: multiplayer (starting)
+## Multiplayer (now milestone 5, on hold)
 
 Plan:
 1. Echo WebSocket on the server (`/ws`).

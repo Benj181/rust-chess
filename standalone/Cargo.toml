@@ -1,0 +1,9 @@
+[package]
+name = "standalone"
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+app = { workspace = true, features = ["csr"] }
+leptos = { workspace = true, features = ["csr"] }
+console_error_panic_hook.workspace = true
