@@ -48,6 +48,10 @@ standalone `index.html` has the same head via `data-trunk` links. `App` uses
 `<Router base=BASE>` with `const BASE = if cfg!(feature = "csr")
 { "/rust-chess" } else { "" }`.
 
+Board size: `--square: clamp(32px, min((100vh - 96px) / 8, (100vw - 420px)
+/ 8), 104px)` fits the window height/width on desktop (user liked it on
+1440p); under 760px it is `min(64px, (100vw - 62px) / 8)`. Text stays fixed.
+
 Also: `style/main.css` (all colours are design tokens on `:root`; no hex
 values outside it),
 `public/favicon.svg`, and the Leptos config in `[[workspace.metadata.leptos]]`
@@ -150,6 +154,9 @@ https://benj181.github.io/rust-chess/engine/ (engine docs), both built by
    in the browser in the standalone version (later in a Web Worker or with a
    time budget so the page doesn't freeze). Needs an "opponent" abstraction
    in `app` (local / AI / online) where the other side's moves come from.
+   Take back is per mode: shown for local and AI games, not online. It is
+   already hidden once a game is over (it lives inside `<Show when=playing>`
+   in `ActionBar`).
 5. **Multiplayer** (for fun, played locally / on the LAN): WebSocket game
    rooms in Axum. The server is authoritative and validates every move with
    `Game::play_uci`. Clocks and timeouts.

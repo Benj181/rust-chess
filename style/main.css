@@ -17,7 +17,7 @@
     --piece-white: #fbf9f6;
     --piece-black: #100e0c;
 
-    --square: min(64px, (100vw - 62px) / 8);
+    --square: clamp(32px, min((100vh - 96px) / 8, (100vw - 420px) / 8), 104px);
 }
 
 body {
@@ -321,6 +321,8 @@ button.active {
 }
 
 @media (max-width: 760px) {
+    :root { --square: min(64px, (100vw - 62px) / 8); }
+
     body {
         padding: 16px;
         box-sizing: border-box;

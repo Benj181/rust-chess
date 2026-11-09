@@ -116,10 +116,10 @@ fn ActionBar() -> impl IntoView {
                     <Icon path=icons::DRAW />
                 </button>
                 <ResignButton />
+                <button on:click=take_back disabled=cant_take_back title="take back">
+                    <Icon path=icons::TAKE_BACK />
+                </button>
             </Show>
-            <button on:click=take_back disabled=cant_take_back title="take back">
-                <Icon path=icons::TAKE_BACK />
-            </button>
             <Show when=show_demo>
                 <button on:click=demo title="load demo game">
                     "demo"
