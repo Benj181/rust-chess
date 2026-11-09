@@ -48,6 +48,14 @@ standalone `index.html` has the same head via `data-trunk` links. `App` uses
 `<Router base=BASE>` with `const BASE = if cfg!(feature = "csr")
 { "/rust-chess" } else { "" }`.
 
+Pane buttons: every button in `.move-controls` and `.move-actions` is
+`flex: 1` (equal share of the row, icon centred with grid), nav 8px / actions
+5px vertical padding; `.popover-anchor` is `display: flex` (avoids the inline
+line-box gap). Tooltips are custom: `data-tip="..."` + `aria-label` instead
+of `title` (native tooltips can't be styled); `[data-tip]::after` shows
+`attr(data-tip)` above the element after a 0.4s `transition-delay`, hidden on
+`.active`.
+
 Board size: `--square: clamp(32px, min((100vh - 96px) / 8, (100vw - 420px)
 / 8), 104px)` fits the window height/width on desktop (user liked it on
 1440p); under 760px it is `min(64px, (100vw - 62px) / 8)`. Text stays fixed.

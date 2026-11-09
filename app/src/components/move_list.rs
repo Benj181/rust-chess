@@ -62,7 +62,7 @@ fn ResignButton() -> impl IntoView {
 
     view! {
         <div class="popover-anchor">
-            <button on:click=ask class:active=asking title="resign">
+            <button on:click=ask class:active=asking data-tip="resign" aria-label="resign">
                 <Icon path=icons::RESIGN />
             </button>
             <Show when=move || asking.get()>
@@ -106,22 +106,22 @@ fn ActionBar() -> impl IntoView {
                 when=playing
                 fallback=move || {
                     view! {
-                        <button on:click=new_game title="new game">
+                        <button on:click=new_game data-tip="new game" aria-label="new game">
                             <Icon path=icons::NEW_GAME />
                         </button>
                     }
                 }
             >
-                <button on:click=draw title="offer draw">
+                <button on:click=draw data-tip="offer draw" aria-label="offer draw">
                     <Icon path=icons::DRAW />
                 </button>
                 <ResignButton />
-                <button on:click=take_back disabled=cant_take_back title="take back">
+                <button on:click=take_back disabled=cant_take_back data-tip="take back" aria-label="take back">
                     <Icon path=icons::TAKE_BACK />
                 </button>
             </Show>
             <Show when=show_demo>
-                <button on:click=demo title="load demo game">
+                <button on:click=demo data-tip="load demo game" aria-label="load demo game">
                     "demo"
                 </button>
             </Show>
@@ -142,19 +142,19 @@ fn MoveControls() -> impl IntoView {
 
     view! {
         <div class="move-controls">
-            <button on:click=flip title="flip board">
+            <button on:click=flip data-tip="flip board" aria-label="flip board">
                 <Icon path=icons::FLIP />
             </button>
-            <button on:click=first disabled=at_start title="first move">
+            <button on:click=first disabled=at_start data-tip="first move" aria-label="first move">
                 <Icon path=icons::FIRST />
             </button>
-            <button on:click=prev disabled=at_start title="previous move">
+            <button on:click=prev disabled=at_start data-tip="previous move" aria-label="previous move">
                 <Icon path=icons::PREV />
             </button>
-            <button on:click=next disabled=at_end title="next move">
+            <button on:click=next disabled=at_end data-tip="next move" aria-label="next move">
                 <Icon path=icons::NEXT />
             </button>
-            <button on:click=last disabled=at_end title="last move">
+            <button on:click=last disabled=at_end data-tip="last move" aria-label="last move">
                 <Icon path=icons::LAST />
             </button>
         </div>
