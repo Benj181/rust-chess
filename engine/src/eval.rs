@@ -11,17 +11,6 @@ use crate::{
 ///
 /// It counts material plus a bonus for where each piece stands
 /// (piece-square tables).
-///
-/// ```
-/// use engine::{board::Board, eval::evaluate};
-///
-/// assert_eq!(evaluate(&Board::start()), 0);
-///
-/// let white = Board::from_fen("4k3/8/8/8/3N4/8/8/4K3 w - - 0 1").unwrap();
-/// let black = Board::from_fen("4k3/8/8/8/3N4/8/8/4K3 b - - 0 1").unwrap();
-/// assert!(evaluate(&white) > 300);
-/// assert_eq!(evaluate(&black), -evaluate(&white));
-/// ```
 #[must_use]
 pub fn evaluate(board: &Board) -> i32 {
     let me = board.side_to_move();

@@ -182,7 +182,8 @@ serves pages and files, no JSON yet; hydration happens in the browser; CSR vs
 SSR both send HTML, CSS, JS and WASM, only the first HTML differs (empty vs
 full page); the request flow (DNS, connect, GET, extra requests for assets).
 
-AI progress (`engine/src/eval.rs`, written by the user):
+AI progress (`engine/src/eval.rs`, written by the user; `mod eval` is
+private, the user made it so, and its doc example lives on `negamax`):
 - `evaluate(&Board) -> i32`: centipawns from the side to move's view
   (`side_score(me) - side_score(opponent)`). `side_score` = material × 100
   plus piece-square bonuses (`flat_map` over `PieceKind::ALL`).
@@ -196,7 +197,25 @@ AI progress (`engine/src/eval.rs`, written by the user):
   --nocapture` for scratch debugging (scratch tests are removed before
   committing). `cargo build --lib` at the root fails on `frontend`
   (Leptos type depth on native); use `-p engine`.
-- Next: search (minimax, then negamax, then alpha-beta).
+- `engine/src/search.rs`: `negamax(&Board, depth: u32) -> i32`:
+  `let Some(next) = depth.checked_sub(1) else { return evaluate(board) }`,
+  then one iterator chain over `generate_legal`: `map(-negamax(child,
+  next))` (`saturating_neg`), `.max()`, `.unwrap_or_else(..)` with
+  `-MATE` (`MATE = 100_000`) in check, else 0 (stalemate). Mate in one
+  needs depth 2 (leaves only evaluate; kept that way on purpose).
+- Taught: minimax tree, negamax ("min is max" with a sign flip), the
+  return value is the propagation, `;` turns an expression into a
+  statement, lazy iterators, odd-even effect (start: 0, 50, 0, 50).
+- Search plan: 1 minimax, 2 negamax, 3 mate/stalemate (done), 4 root
+  `best_move(board, depth) -> Option<Move>` + hook into the app, 5
+  alpha-beta, 6 move ordering, 7 quiescence, 8 iterative deepening + time
+  limit, 9 Zobrist + transposition table.
+- Where we stopped: prefer faster mates. The user's task: return `-MATE`
+  adjusted by the remaining `depth` (more depth left = mated sooner = more
+  negative), via `i32::try_from(depth)` and a `saturating_` op. Check with
+  the back-rank mate `6k1/5ppp/8/8/8/8/8/3R2K1 w - - 0 1` (`Rd8#`): depth
+  0..3 gave 180, 185, 100000, 100000; after the change depth 2 and 3 should
+  differ. Asked the user to predict which is higher before running it.
 
 The board is playable by clicking, with highlights.
 
