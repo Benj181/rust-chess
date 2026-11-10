@@ -174,7 +174,29 @@ https://benj181.github.io/rust-chess/engine/ (engine docs), both built by
    sounds in `public/sounds/`, not Lichess/chess.com ones.
 7. Optional: persistence.
 
-## Current status: milestones 2 and 3 done; AI (milestone 4) next
+## Current status: milestones 2 and 3 done; AI (milestone 4) in progress
+
+Explained before the AI (the user understood it): `app` is compiled twice
+(server: renders HTML strings; WASM: runs in the browser); the server only
+serves pages and files, no JSON yet; hydration happens in the browser; CSR vs
+SSR both send HTML, CSS, JS and WASM, only the first HTML differs (empty vs
+full page); the request flow (DNS, connect, GET, extra requests for assets).
+
+AI progress (`engine/src/eval.rs`, written by the user):
+- `evaluate(&Board) -> i32`: centipawns from the side to move's view
+  (`side_score(me) - side_score(opponent)`). `side_score` = material × 100
+  plus piece-square bonuses (`flat_map` over `PieceKind::ALL`).
+- `square_bonus(kind, color, sq)`: tables `PAWN`..`KING` (simplified
+  evaluation function, rank 8 on top, White's view); White looks up
+  `index ^ 56`, Black the plain index. The king table is middlegame only
+  (tapered endgame eval is a later step).
+- Taught: centipawns, side-to-move scores, PSTs, the `^ 56` rank flip,
+  `unwrap_or(0)` hiding bugs, turbofish `sum::<i32>()`, `flat_map` +
+  `move` closures, borrowing tables (`&PAWN`), `cargo test -p engine NAME --
+  --nocapture` for scratch debugging (scratch tests are removed before
+  committing). `cargo build --lib` at the root fails on `frontend`
+  (Leptos type depth on native); use `-p engine`.
+- Next: search (minimax, then negamax, then alpha-beta).
 
 The board is playable by clicking, with highlights.
 
