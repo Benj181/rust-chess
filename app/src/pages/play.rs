@@ -29,6 +29,7 @@ fn press_key(state: PlayState, key: &str) -> bool {
 #[component]
 pub fn PlayPage() -> impl IntoView {
     let state = PlayState::provide();
+    crate::ai::start(state);
     let deselect = window_event_listener(ev::click, move |_| state.cancel_promotion());
     let keys = window_event_listener(ev::keydown, move |e| {
         let modified = e.ctrl_key() || e.meta_key() || e.alt_key();

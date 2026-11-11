@@ -137,8 +137,8 @@ engine/src/
 │                   san (Board::san), uci (parse_uci, used by Game)
 ├── game.rs         Game; mod result + pub use
 ├── game/result.rs  GameResult, WinReason, DrawReason, MoveError
-├── search.rs       pub mod: negamax (later best_move)
-└── search/eval.rs  private: evaluate + PSTs (later search/tt.rs)
+├── search.rs       pub mod: search, Limits, Report (Searcher is private)
+└── search/         private: eval (evaluate + PSTs), ordering, tt
 ```
 
 Rules: the app imports from the root (`engine::Board`, `engine::Square`,
@@ -243,25 +243,59 @@ is private inside `search`, and its doc example lives on `negamax`):
   --nocapture` for scratch debugging (scratch tests are removed before
   committing). `cargo build --lib` at the root fails on `frontend`
   (Leptos type depth on native); use `-p engine`.
-- `engine/src/search.rs`: `negamax(&Board, depth: u32) -> i32`:
-  `let Some(next) = depth.checked_sub(1) else { return evaluate(board) }`,
-  then one iterator chain over `board.legal_moves()`: `map(-negamax(child,
-  next))` (`saturating_neg`), `.max()`, `.unwrap_or_else(..)` with
-  `-MATE` (`MATE = 100_000`) in check, else 0 (stalemate). Mate in one
-  needs depth 2 (leaves only evaluate; kept that way on purpose).
-- Taught: minimax tree, negamax ("min is max" with a sign flip), the
-  return value is the propagation, `;` turns an expression into a
-  statement, lazy iterators, odd-even effect (start: 0, 50, 0, 50).
-- Search plan: 1 minimax, 2 negamax, 3 mate/stalemate (done), 4 root
-  `best_move(board, depth) -> Option<Move>` + hook into the app, 5
-  alpha-beta, 6 move ordering, 7 quiescence, 8 iterative deepening + time
-  limit, 9 Zobrist + transposition table.
-- Where we stopped: prefer faster mates. The user's task: return `-MATE`
-  adjusted by the remaining `depth` (more depth left = mated sooner = more
-  negative), via `i32::try_from(depth)` and a `saturating_` op. Check with
-  the back-rank mate `6k1/5ppp/8/8/8/8/8/3R2K1 w - - 0 1` (`Rd8#`): depth
-  0..3 gave 180, 185, 100000, 100000; after the change depth 2 and 3 should
-  differ. Asked the user to predict which is higher before running it.
+- The user wrote plain negamax with mate/stalemate scores, then asked
+  Claude to write the rest of the search (not motivated to write more
+  search code). Taught before that: minimax tree, negamax, lazy iterators,
+  the odd-even effect.
+- `engine/src/search.rs` (written by Claude): `search(&Board, Limits
+  { depth, nodes }) -> Report { best, score, depth, nodes }`. A private
+  `Searcher` (table, node counter, `stopped`, `root_move`) with `negamax`
+  (alpha-beta, fail-soft) and `quiesce`. Pieces:
+  - mate score is `ply - MATE` (faster mates score higher);
+    `to_table` / `from_table` shift mate scores by `ply` for the table;
+  - move ordering in `search/ordering.rs`: hash move, then captures and
+    queen promotions by victim minus attacker / 10, then quiet moves
+    (`MoveList::sort_by_key` was added for it);
+  - quiescence: stand pat, then captures only; a side in check at depth 0
+    gets one more ply instead (so mates are seen at the leaves);
+  - iterative deepening 1..=depth, stops on the node budget (no clock in
+    WASM) or a mate score; an unfinished depth is thrown away;
+  - `search/tt.rs`: `Table` of 131 072 `Option<Entry>` (always replace),
+    `Bound::{Exact, Lower, Upper}`;
+  - `board/zobrist.rs`: `Board::zobrist()` computed from scratch, keys
+    from a splitmix64 `key(slot)` function instead of tables;
+  - `Board::try_move(mv) -> Option<Board>` in `movegen.rs` (legality + the
+    child with one `make_move`; `generate_legal` uses it too), the search
+    loops over pseudo-legal moves;
+  - draws inside the search: 50-move clock and insufficient material.
+- Measured (release, native): start position depth 5 is 52k nodes against
+  5.07M for plain minimax; depth 6 is 284k nodes in about 65 ms.
+- Not done: repetition is unknown to the search (self-play ended in a
+  threefold draw; needs the game's earlier hashes passed in), killer /
+  history ordering, null move, LMR, tapered king eval, magic bitboards.
+- Explained to the user in steps (alpha-beta, ordering, quiescence,
+  iterative deepening + budget, Zobrist + table); check what they
+  understood before building on it.
+- AI in the app (written by Claude on request):
+  - `app/src/ai.rs` (about 35 lines): `start(state)` (called in
+    `PlayPage`) is an `Effect`; when `board_to_answer(state)` is `Some`
+    (the AI's turn, game not over) it clones the board and, after a 50 ms
+    `set_timeout` so the human's move is drawn first, `think` runs
+    `search` with `LIMITS` (depth 12, 1M nodes, about 0.3 s) on the main
+    thread and plays the move only if the position is still the same
+    board (drops stale answers after take back / new game).
+  - A Web Worker version was built and tested, then removed: the user
+    could not follow the worker code and a 0.3 s freeze is hardly
+    noticeable. Don't bring it back unless the user asks; if thinking
+    time grows, lower `LIMITS` first.
+  - `PlayState.ai: RwSignal<Option<Color>>` (the colour the computer
+    plays, `None` = two players), `ai_to_move()`, `toggle_ai()` (computer
+    takes the side opposite the current perspective). `click_square`
+    returns early when it is the AI's turn. Action bar: a chip icon button
+    (`icons::COMPUTER`, `button.on` = accent colour); take back undoes two
+    plies against the AI; resign resigns the human's side.
+- Possible next: a "thinking" status line, repetition in the search,
+  difficulty levels (just other `Limits`).
 
 The board is playable by clicking, with highlights.
 

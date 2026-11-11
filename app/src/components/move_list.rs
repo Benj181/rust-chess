@@ -1,6 +1,6 @@
 use crate::components::icons::{self, Icon};
 use crate::state::PlayState;
-use engine::Game;
+use engine::{Color, Game};
 use leptos::{ev, prelude::*};
 
 #[component]
@@ -54,8 +54,9 @@ fn ResignButton() -> impl IntoView {
         asking.update(|a| *a = !*a);
     };
     let resign = move |_| {
+        let human = state.ai.get().map(Color::opposite);
         state.game.update(|g| {
-            let _ = g.resign(g.board().side_to_move());
+            let _ = g.resign(human.unwrap_or(g.board().side_to_move()));
         });
         state.go_live();
     };
@@ -87,8 +88,17 @@ fn ActionBar() -> impl IntoView {
     let cant_take_back = move || state.game.with(|g| g.moves().is_empty());
     let show_demo = move || cfg!(debug_assertions) && cant_take_back();
 
+    let vs_ai = move || state.ai.with(Option::is_some);
+    let toggle_ai = move |_| state.toggle_ai();
+
     let take_back = move |_| {
-        state.game.update(|g| g.undo());
+        let ai = state.ai.get();
+        state.game.update(|g| {
+            g.undo();
+            if ai == Some(g.board().side_to_move()) {
+                g.undo();
+            }
+        });
         state.go_live();
     };
     let draw = move |_| {
@@ -125,6 +135,14 @@ fn ActionBar() -> impl IntoView {
                     <Icon path=icons::TAKE_BACK />
                 </button>
             </Show>
+            <button
+                on:click=toggle_ai
+                class:on=vs_ai
+                data-tip="play the computer"
+                aria-label="play the computer"
+            >
+                <Icon path=icons::COMPUTER />
+            </button>
             <Show when=show_demo>
                 <button on:click=demo data-tip="load demo game" aria-label="load demo game">
                     "demo"

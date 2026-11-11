@@ -1,3 +1,4 @@
+mod ai;
 mod components;
 mod dev;
 mod pages;

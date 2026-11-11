@@ -314,6 +314,7 @@ button.active {
     background: var(--hover);
     color: var(--text);
 }
+button.on { color: var(--accent); }
 
 .popover-anchor {
     position: relative;

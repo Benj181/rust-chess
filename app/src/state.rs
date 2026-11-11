@@ -12,6 +12,7 @@ pub struct PlayState {
     pub perspective: RwSignal<Color>,
     pub viewing: RwSignal<Option<usize>>,
     pub promoting: RwSignal<Option<(Square, Square)>>,
+    pub ai: RwSignal<Option<Color>>,
     pub shown_ply: Memo<usize>,
     pub shown: Memo<Board>,
     pub shown_move: Memo<Option<Move>>,
@@ -42,6 +43,7 @@ impl PlayState {
             perspective: RwSignal::new(Color::White),
             viewing,
             promoting: RwSignal::new(None),
+            ai: RwSignal::new(None),
             shown_ply,
             shown,
             shown_move,
@@ -52,6 +54,15 @@ impl PlayState {
 
     pub fn is_live(self) -> bool {
         self.viewing.with(Option::is_none)
+    }
+
+    pub fn ai_to_move(self) -> bool {
+        self.ai.get() == Some(self.game.with(|g| g.board().side_to_move()))
+    }
+
+    pub fn toggle_ai(self) {
+        let color = self.perspective.get().opposite();
+        self.ai.update(|ai| *ai = ai.is_none().then_some(color));
     }
 
     pub fn view_ply(self, ply: usize) {

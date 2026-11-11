@@ -29,7 +29,7 @@ pub fn PieceIcon(piece: Piece) -> impl IntoView {
 }
 
 fn click_square(state: PlayState, sq: Square) {
-    if !state.is_live() {
+    if !state.is_live() || state.ai_to_move() {
         return;
     }
     let PlayState { game, selected, .. } = state;
