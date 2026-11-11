@@ -19,7 +19,6 @@
 //! ```
 
 mod board;
-mod eval;
 mod game;
 pub mod movegen;
 mod notation;

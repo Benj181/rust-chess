@@ -1,6 +1,8 @@
 //! Search: looking ahead through the moves to find the best one.
 
-use crate::{board::Board, eval::evaluate, movegen::generate_legal, types::MoveList};
+mod eval;
+
+use crate::{board::Board, movegen::generate_legal, search::eval::evaluate, types::MoveList};
 
 const MATE: i32 = 100_000;
 

@@ -122,7 +122,7 @@ Idioms used throughout:
 ## Engine layout
 
 Layers, each using only the ones below it: `types` → `board` → `movegen` →
-`notation` → `game` (`eval` / `search` sit above `movegen`).
+`notation` → `game` (`search` sits above `movegen`).
 
 ```
 engine/src/
@@ -137,8 +137,8 @@ engine/src/
 │                   san (Board::san), uci (parse_uci, used by Game)
 ├── game.rs         Game; mod result + pub use
 ├── game/result.rs  GameResult, WinReason, DrawReason, MoveError
-├── eval.rs         private
-└── search.rs       pub mod
+├── search.rs       pub mod: negamax (later best_move)
+└── search/eval.rs  private: evaluate + PSTs (later search/tt.rs)
 ```
 
 Rules: the app imports from the root (`engine::Board`, `engine::Square`,
@@ -152,7 +152,9 @@ public signature mentions must be re-exported at the root. Inside private
 modules write `pub`, not `pub(crate)` (clippy `redundant_pub_crate`); a
 `pub(crate)` method or field on a re-exported type is fine. Format-on-save
 needs `~/.config/rustfmt/rustfmt.toml` with `edition = "2024"` (set up), or
-rustfmt fails silently on let-chains.
+rustfmt fails silently on let-chains. Zobrist hashing goes in
+`board/zobrist.rs` (a property of a position; `Game` can use it for
+repetition), not under `search`.
 
 ## Engine API (done)
 
@@ -222,8 +224,8 @@ serves pages and files, no JSON yet; hydration happens in the browser; CSR vs
 SSR both send HTML, CSS, JS and WASM, only the first HTML differs (empty vs
 full page); the request flow (DNS, connect, GET, extra requests for assets).
 
-AI progress (`engine/src/eval.rs`, written by the user; `mod eval` is
-private, the user made it so, and its doc example lives on `negamax`):
+AI progress (`engine/src/search/eval.rs`, written by the user; `mod eval`
+is private inside `search`, and its doc example lives on `negamax`):
 - `evaluate(&Board) -> i32`: centipawns from the side to move's view
   (`side_score(me) - side_score(opponent)`). `side_score` = material × 100
   plus piece-square bonuses (`flat_map` over `PieceKind::ALL`).
