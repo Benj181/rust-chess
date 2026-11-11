@@ -1,9 +1,6 @@
 //! Moves: [`MoveKind`], the compact [`Move`] and the fixed-capacity [`MoveList`].
 
-use crate::{
-    piece::{Color, Piece, PieceKind},
-    square::Square,
-};
+use crate::types::{Color, Piece, PieceKind, Square};
 use std::fmt;
 
 const MAX_MOVES: usize = 256;

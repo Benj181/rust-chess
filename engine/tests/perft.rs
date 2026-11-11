@@ -4,7 +4,7 @@
 //!
 //! Positions and numbers: <https://www.chessprogramming.org/Perft_Results>
 
-use engine::{board::Board, movegen::perft};
+use engine::{movegen::perft, Board};
 
 #[allow(
     clippy::expect_used,

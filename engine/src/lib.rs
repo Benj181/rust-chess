@@ -1,12 +1,12 @@
 //! A chess engine built on bitboards.
 //!
-//! A position is a [`board::Board`], usually created with
-//! [`board::Board::from_fen`]. [`movegen::generate_legal`] lists the moves
+//! A position is a [` Board`], usually created with
+//! [`Board::from_fen`]. [`movegen::generate_legal`] lists the moves
 //! in a position, and [`board::Board::make_move`] plays one, returning the
 //! new position.
 //!
 //! ```
-//! use engine::{board::Board, movegen::generate_legal, moves::MoveList};
+//! use engine::{movegen::generate_legal, Board, MoveList};
 //!
 //! let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
 //! let mut moves = MoveList::new();
@@ -19,15 +19,17 @@
 //! ```
 
 mod attacks;
-pub mod bitboard;
-pub mod board;
-pub mod castling;
+mod board;
 mod direction;
 mod eval;
-pub mod game;
+mod game;
 pub mod movegen;
-pub mod moves;
-pub mod piece;
 mod san;
 pub mod search;
-pub mod square;
+mod types;
+
+pub use board::Board;
+pub use game::{DrawReason, Game, GameResult, MoveError, WinReason};
+pub use types::{
+    Bitboard, CastlingRights, Color, Move, MoveKind, MoveList, Piece, PieceKind, Square,
+};

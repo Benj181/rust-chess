@@ -1,12 +1,9 @@
 //! [`Game`]: a chess game from start to finish, with its history and result.
 
 use crate::{
-    bitboard::Bitboard,
     board::Board,
     movegen::generate_legal,
-    moves::{Move, MoveList},
-    piece::{Color, PieceKind},
-    square::Square,
+    types::{Bitboard, Color, Move, MoveList, PieceKind, Square},
 };
 use std::{cmp::Ordering, fmt};
 

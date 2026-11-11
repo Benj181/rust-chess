@@ -1,8 +1,5 @@
 use crate::state::PlayState;
-use engine::{
-    piece::{Color, Piece, PieceKind},
-    square::Square,
-};
+use engine::{Color, Piece, PieceKind, Square};
 use leptos::{ev, prelude::*};
 
 #[derive(Clone, Copy)]

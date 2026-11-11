@@ -8,13 +8,9 @@ use crate::{
     attacks::{
         bishop_attacks, king_attacks, knight_attacks, pawn_attacks, queen_attacks, rook_attacks,
     },
-    bitboard::Bitboard,
     board::Board,
-    castling::Castle,
     direction::Direction,
-    moves::{Move, MoveKind, MoveList},
-    piece::{Color, PieceKind},
-    square::Square,
+    types::{Bitboard, Castle, Color, Move, MoveKind, MoveList, PieceKind, Square},
 };
 
 type AttacksFn = fn(Square, Bitboard) -> Bitboard;
@@ -185,7 +181,7 @@ pub fn generate_legal(board: &Board, list: &mut MoveList) {
 /// # Examples
 ///
 /// ```
-/// use engine::{board::Board, movegen::perft};
+/// use engine::{movegen::perft, Board};
 ///
 /// let start = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
 /// assert_eq!(perft(&start, 2), 400);

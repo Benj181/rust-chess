@@ -1,4 +1,4 @@
-use crate::{bitboard::Bitboard, square::Square};
+use crate::types::{Bitboard, Square};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Direction {

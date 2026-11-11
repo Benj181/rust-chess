@@ -1,6 +1,6 @@
 //! Search: looking ahead through the moves to find the best one.
 
-use crate::{board::Board, eval::evaluate, movegen::generate_legal, moves::MoveList};
+use crate::{board::Board, eval::evaluate, movegen::generate_legal, types::MoveList};
 
 const MATE: i32 = 100_000;
 
@@ -13,7 +13,7 @@ const MATE: i32 = 100_000;
 /// needs depth 2.
 ///
 /// ```
-/// use engine::{board::Board, search::negamax};
+/// use engine::{search::negamax, Board};
 ///
 /// assert_eq!(negamax(&Board::start(), 0), 0);
 ///

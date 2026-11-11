@@ -1,4 +1,4 @@
-use engine::game::Game;
+use engine::Game;
 
 const KASPAROV_TOPALOV_1999: &[&str] = &[
     "e2e4", "d7d6", "d2d4", "g8f6", "b1c3", "g7g6", "c1e3", "f8g7", "d1d2", "c7c6", "f2f3", "b7b5",

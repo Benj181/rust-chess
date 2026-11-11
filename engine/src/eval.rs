@@ -2,8 +2,7 @@
 
 use crate::{
     board::Board,
-    piece::{Color, PieceKind},
-    square::Square,
+    types::{Color, PieceKind, Square},
 };
 
 /// Scores `board` in centipawns (100 = one pawn) from the point of view of

@@ -1,9 +1,7 @@
 use engine::{
-    board::Board,
-    game::Game,
-    moves::Move,
-    piece::{Color, PieceKind},
-    square::Square,
+    Board,
+    Game,
+    Color, Move, PieceKind, Square,
 };
 use leptos::prelude::*;
 

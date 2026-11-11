@@ -1,9 +1,6 @@
 use crate::components::board::PieceIcon;
 use crate::state::PlayState;
-use engine::{
-    board::Board,
-    piece::{Color, Piece, PieceKind},
-};
+use engine::{Board, Color, Piece, PieceKind};
 use leptos::prelude::*;
 
 const START: [(PieceKind, u32); 5] = [
@@ -38,7 +35,11 @@ pub fn MaterialStrip(at_top: bool) -> impl IntoView {
     let state = expect_context::<PlayState>();
     let player = move || {
         let bottom = state.perspective.get();
-        if at_top { bottom.opposite() } else { bottom }
+        if at_top {
+            bottom.opposite()
+        } else {
+            bottom
+        }
     };
     let pieces = move || {
         let player = player();
@@ -47,7 +48,9 @@ pub fn MaterialStrip(at_top: bool) -> impl IntoView {
             .with(|b| captured_by(b, player))
             .into_iter()
             .map(|(piece, count)| {
-                let stack = (0..count).map(|_| view! { <PieceIcon piece /> }).collect_view();
+                let stack = (0..count)
+                    .map(|_| view! { <PieceIcon piece /> })
+                    .collect_view();
                 view! { <span class="captured">{stack}</span> }
             })
             .collect_view()

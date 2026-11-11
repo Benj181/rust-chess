@@ -1,6 +1,6 @@
 use crate::components::icons::{self, Icon};
 use crate::state::PlayState;
-use engine::game::Game;
+use engine::Game;
 use leptos::{ev, prelude::*};
 
 #[component]
@@ -116,7 +116,12 @@ fn ActionBar() -> impl IntoView {
                     <Icon path=icons::DRAW />
                 </button>
                 <ResignButton />
-                <button on:click=take_back disabled=cant_take_back data-tip="take back" aria-label="take back">
+                <button
+                    on:click=take_back
+                    disabled=cant_take_back
+                    data-tip="take back"
+                    aria-label="take back"
+                >
                     <Icon path=icons::TAKE_BACK />
                 </button>
             </Show>
@@ -148,7 +153,12 @@ fn MoveControls() -> impl IntoView {
             <button on:click=first disabled=at_start data-tip="first move" aria-label="first move">
                 <Icon path=icons::FIRST />
             </button>
-            <button on:click=prev disabled=at_start data-tip="previous move" aria-label="previous move">
+            <button
+                on:click=prev
+                disabled=at_start
+                data-tip="previous move"
+                aria-label="previous move"
+            >
                 <Icon path=icons::PREV />
             </button>
             <button on:click=next disabled=at_end data-tip="next move" aria-label="next move">

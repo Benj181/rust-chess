@@ -2,7 +2,7 @@ use crate::components::board::ChessBoard;
 use crate::components::material::MaterialStrip;
 use crate::components::move_list::MoveList;
 use crate::state::PlayState;
-use engine::game::{Game, GameResult};
+use engine::{Game, GameResult};
 use leptos::{ev, prelude::*};
 
 fn status_text(game: &Game) -> String {

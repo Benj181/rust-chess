@@ -1,4 +1,7 @@
-use crate::{bitboard::Bitboard, direction::Direction, piece::Color, square::Square};
+use crate::{
+    direction::Direction,
+    types::{Bitboard, Color, Square},
+};
 
 #[must_use]
 pub const fn knight_attacks(sq: Square) -> Bitboard {

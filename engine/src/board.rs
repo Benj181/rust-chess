@@ -2,11 +2,7 @@
 
 use crate::{
     attacks::{bishop_attacks, king_attacks, knight_attacks, pawn_attacks, rook_attacks},
-    bitboard::Bitboard,
-    castling::{Castle, CastlingRights},
-    moves::{Move, MoveKind},
-    piece::{Color, Piece, PieceKind},
-    square::Square,
+    types::{Bitboard, Castle, CastlingRights, Color, Move, MoveKind, Piece, PieceKind, Square},
 };
 use std::fmt;
 
@@ -53,7 +49,7 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// use engine::board::Board;
+    /// use engine::Board;
     ///
     /// assert!(Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").is_some());
     /// assert!(Board::from_fen("4k3/8/8/8/8/8/8/4K3 w - -").is_some());
@@ -110,7 +106,7 @@ impl Board {
     /// [`from_fen`](Self::from_fen).
     ///
     /// ```
-    /// use engine::board::Board;
+    /// use engine::Board;
     ///
     /// let fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
     /// assert_eq!(Board::from_fen(fen).unwrap().to_fen(), fen);

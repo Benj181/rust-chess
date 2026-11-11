@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use crate::piece::Color;
+use crate::types::Color;
 
 /// One of the 64 squares, always valid.
 ///
@@ -110,7 +110,7 @@ impl Square {
     /// turned around, so it is h1, g1, …, a8.
     ///
     /// ```
-    /// use engine::{piece::Color, square::Square};
+    /// use engine::{Color, Square};
     ///
     /// let mut white = Square::reading_order(Color::White);
     /// assert_eq!(white.next(), Some(Square::A8));

@@ -2,7 +2,7 @@
 //! moves, shared by move generation and
 //! [`Board::make_move`](crate::board::Board::make_move).
 
-use crate::{bitboard::Bitboard, moves::MoveKind, piece::Color, square::Square};
+use crate::types::{Bitboard, Color, MoveKind, Square};
 
 /// Which of the four castlings are still allowed, as a set of flags.
 ///
@@ -83,7 +83,7 @@ impl CastlingRights {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct Castle {
+pub struct Castle {
     pub(crate) right: CastlingRights,
     pub(crate) kind: MoveKind,
     pub(crate) king_from: Square,

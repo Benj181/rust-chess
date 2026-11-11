@@ -3,8 +3,7 @@
 use crate::{
     board::Board,
     movegen::generate_legal,
-    moves::{Move, MoveKind, MoveList},
-    piece::{Color, Piece, PieceKind},
+    types::{Color, Move, MoveKind, MoveList, Piece, PieceKind},
 };
 
 impl Board {
@@ -15,7 +14,7 @@ impl Board {
     /// `mv` should be legal in this position.
     ///
     /// ```
-    /// use engine::{board::Board, game::Game};
+    /// use engine::{Board, Game};
     ///
     /// let mut game = Game::new();
     /// game.play_uci("g1f3").unwrap();
