@@ -14,8 +14,10 @@ use std::fmt;
 /// records, which is the side to move, castling rights, the en passant square
 /// and both move clocks.
 ///
-/// Pieces are stored as six bitboards by kind and two by color. A board never
-/// changes from the outside: [`make_move`](Self::make_move) returns a new one.
+/// Pieces are stored as six bitboards by kind and two by color, together
+/// with a running hash of where they stand (see [`zobrist`](Self::zobrist)).
+/// A board never changes from the outside: [`make_move`](Self::make_move)
+/// returns a new one.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Board {
     pawns: Bitboard,
@@ -26,6 +28,7 @@ pub struct Board {
     kings: Bitboard,
     white: Bitboard,
     black: Bitboard,
+    placement_hash: u64,
     pub(crate) side_to_move: Color,
     pub(crate) castling: CastlingRights,
     pub(crate) en_passant: Option<Square>,
@@ -46,6 +49,7 @@ impl Board {
             kings: Bitboard::EMPTY,
             white: Bitboard::EMPTY,
             black: Bitboard::EMPTY,
+            placement_hash: 0,
             side_to_move: Color::White,
             castling: CastlingRights::NONE,
             en_passant: None,
@@ -146,7 +150,8 @@ impl Board {
             .sum()
     }
 
-    pub(crate) const fn put(&mut self, piece: Piece, sq: Square) {
+    pub(crate) fn put(&mut self, piece: Piece, sq: Square) {
+        self.placement_hash ^= zobrist::piece_key(piece, sq);
         self.pieces_mut(piece.kind()).set(sq);
         match piece.color() {
             Color::White => self.white.set(sq),
@@ -154,7 +159,8 @@ impl Board {
         }
     }
 
-    pub(crate) const fn remove(&mut self, piece: Piece, sq: Square) {
+    pub(crate) fn remove(&mut self, piece: Piece, sq: Square) {
+        self.placement_hash ^= zobrist::piece_key(piece, sq);
         self.pieces_mut(piece.kind()).clear(sq);
         match piece.color() {
             Color::White => self.white.clear(sq),
@@ -200,12 +206,12 @@ impl Board {
         }
     }
 
-    const fn move_piece(&mut self, piece: Piece, from: Square, to: Square) {
+    fn move_piece(&mut self, piece: Piece, from: Square, to: Square) {
         self.remove(piece, from);
         self.put(piece, to);
     }
 
-    const fn promote(&mut self, pawn: Piece, from: Square, to: Square, promoted: PieceKind) {
+    fn promote(&mut self, pawn: Piece, from: Square, to: Square, promoted: PieceKind) {
         self.remove(pawn, from);
         self.put(Piece::new(pawn.color(), promoted), to);
     }
@@ -308,6 +314,17 @@ impl Board {
         }
         next.side_to_move = us.opposite();
 
+        next
+    }
+
+    /// The same position with the other side to move, as if the side to move
+    /// passed its turn. That is not a chess move; the search uses it to ask
+    /// "what if I did nothing here?".
+    #[must_use]
+    pub(crate) fn pass(&self) -> Self {
+        let mut next = self.clone();
+        next.side_to_move = self.side_to_move.opposite();
+        next.en_passant = None;
         next
     }
 

@@ -31,7 +31,7 @@ fn push_moves_to(from: Square, targets: Bitboard, kind: MoveKind, list: &mut Mov
     }
 }
 
-fn non_pawn_moves(board: &Board, list: &mut MoveList) {
+fn non_pawn_moves(board: &Board, quiet: bool, list: &mut MoveList) {
     let us = board.side_to_move();
     let theirs = board.occupied_by(us.opposite());
     let occupied = board.occupied();
@@ -40,7 +40,9 @@ fn non_pawn_moves(board: &Board, list: &mut MoveList) {
         for from in board.pieces_of(us, kind) {
             let targets = attacks(from, occupied);
             push_moves_to(from, targets & theirs, MoveKind::Capture, list);
-            push_moves_to(from, targets & !occupied, MoveKind::Quiet, list);
+            if quiet {
+                push_moves_to(from, targets & !occupied, MoveKind::Quiet, list);
+            }
         }
     }
 }
@@ -81,7 +83,7 @@ fn push_pawn_move(
     }
 }
 
-fn pawn_moves(board: &Board, list: &mut MoveList) {
+fn pawn_moves(board: &Board, quiet: bool, list: &mut MoveList) {
     let us = board.side_to_move();
     let theirs = board.occupied_by(us.opposite());
     let empty = !board.occupied();
@@ -96,9 +98,13 @@ fn pawn_moves(board: &Board, list: &mut MoveList) {
 
         let single = forward.step(from_bb) & empty;
         for to in single {
-            push_pawn_move(from, to, false, promo_rank, list);
+            if quiet {
+                push_pawn_move(from, to, false, promo_rank, list);
+            } else if promo_rank.contains(to) {
+                list.push(Move::new(from, to, MoveKind::PromoQueen));
+            }
         }
-        if start_rank.contains(from) {
+        if quiet && start_rank.contains(from) {
             for to in forward.step(single) & empty {
                 list.push(Move::new(from, to, MoveKind::DoublePush));
             }
@@ -143,9 +149,19 @@ fn castling_moves(board: &Board, list: &mut MoveList) {
 /// Castling moves are already fully checked, including that the king does not
 /// pass through an attacked square.
 pub fn generate_pseudo_legal(board: &Board, list: &mut MoveList) {
-    pawn_moves(board, list);
-    non_pawn_moves(board, list);
+    pawn_moves(board, true, list);
+    non_pawn_moves(board, true, list);
     castling_moves(board, list);
+}
+
+/// Appends only the pseudo-legal moves that change the material: every
+/// capture, and pushes that promote to a queen.
+///
+/// The quiescence search looks at nothing else, so it skips generating the
+/// quiet moves at all.
+pub fn generate_pseudo_legal_captures(board: &Board, list: &mut MoveList) {
+    pawn_moves(board, false, list);
+    non_pawn_moves(board, false, list);
 }
 
 /// Appends every legal move to `list`: the pseudo-legal moves that do not

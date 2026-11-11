@@ -2,7 +2,7 @@
 
 use crate::{
     board::Board,
-    types::{CastlingRights, Color, PieceKind, Square},
+    types::{CastlingRights, Color, Piece, PieceKind, Square},
 };
 
 const SIDE_SLOT: u64 = 768;
@@ -21,8 +21,10 @@ const fn key(slot: u64) -> u64 {
     x ^ (x >> 31)
 }
 
-fn piece_slot(color: Color, kind: PieceKind, sq: Square) -> u64 {
-    let kind = match kind {
+/// The number that stands for `piece` on `sq`. [`Board`] combines these
+/// into a running hash as pieces are put down and removed.
+pub fn piece_key(piece: Piece, sq: Square) -> u64 {
+    let kind = match piece.kind() {
         PieceKind::Pawn => 0,
         PieceKind::Knight => 1,
         PieceKind::Bishop => 2,
@@ -30,17 +32,20 @@ fn piece_slot(color: Color, kind: PieceKind, sq: Square) -> u64 {
         PieceKind::Queen => 4,
         PieceKind::King => 5,
     };
-    let piece: u64 = match color {
+    let piece: u64 = match piece.color() {
         Color::White => kind,
         Color::Black => kind | 8,
     };
-    (piece << 6) | u64::from(sq.index())
+    key((piece << 6) | u64::from(sq.index()))
 }
 
 impl Board {
     /// A 64-bit fingerprint of the position (a Zobrist hash): every fact
     /// that [`same_position`](Self::same_position) compares has its own
     /// random-looking number, and the hash is all of them combined with XOR.
+    ///
+    /// The piece part is kept up to date as pieces move, so this only has to
+    /// add the side to move, the en passant square and the castling rights.
     ///
     /// The same position always gives the same hash, however it was reached.
     /// Two different positions almost never share one.
@@ -61,15 +66,8 @@ impl Board {
     /// ```
     #[must_use]
     pub fn zobrist(&self) -> u64 {
-        let mut hash = 0;
+        let mut hash = self.placement_hash;
 
-        for color in Color::ALL {
-            for kind in PieceKind::ALL {
-                for sq in self.pieces_of(color, kind) {
-                    hash ^= key(piece_slot(color, kind, sq));
-                }
-            }
-        }
         if self.side_to_move == Color::Black {
             hash ^= key(SIDE_SLOT);
         }
