@@ -33,7 +33,7 @@ a learning project. The chess engine is mostly done; the main goal now is to
 
 | Crate | Purpose |
 |---|---|
-| `engine/` | Chess logic: bitboards, FEN, move generation, `Game`. No web deps. |
+| `engine/` | Chess logic: bitboards, FEN, move generation, `Game`. No web deps. Layout: see "Engine layout". |
 | `app/` | Leptos components and routes, shared by both versions (features `ssr` / `hydrate` / `csr`). |
 | `frontend/` | Server version's browser half: `hydrate()` hydrates `App`. |
 | `server/` | Axum binary: serves SSR pages, static files and (later) WebSockets. |
@@ -119,22 +119,59 @@ Idioms used throughout:
 - Nested `use crate::{...}` imports, let-chains (edition 2024), fn pointers.
 - Public functions returning `Result` need a `# Errors` doc section.
 
+## Engine layout
+
+Layers, each using only the ones below it: `types` → `board` → `movegen` →
+`notation` → `game` (`eval` / `search` sit above `movegen`).
+
+```
+engine/src/
+├── lib.rs          private mods + root re-exports (the public API)
+├── types.rs        private mods + pub use
+├── types/          square, piece, bitboard, moves, castling
+├── board.rs        Board (fields private except the 5 FEN writes)
+├── board/          attacks, direction (pub mod: movegen uses them)
+├── movegen.rs      pub mod
+├── notation.rs     mod fen; mod san; pub mod uci;
+├── notation/       fen (Board + CastlingRights FEN, start, START_FEN),
+│                   san (Board::san), uci (parse_uci, used by Game)
+├── game.rs         Game; mod result + pub use
+├── game/result.rs  GameResult, WinReason, DrawReason, MoveError
+├── eval.rs         private
+└── search.rs       pub mod
+```
+
+Rules: the app imports from the root (`engine::Board`, `engine::Square`,
+`engine::movegen::perft`); engine code imports through the layer
+(`crate::types::Square`, `crate::board::attacks::..`) so wrong-direction
+dependencies show. Submodules use `name.rs` + `name/`, are private and
+re-exported by their parent (`types.rs`, `game.rs`); `pub mod` only when a
+free function must be reached by path (`attacks`, `uci`). `impl` blocks live
+where their topic is (`impl Board` in `fen.rs` and `san.rs`). Anything a
+public signature mentions must be re-exported at the root. Inside private
+modules write `pub`, not `pub(crate)` (clippy `redundant_pub_crate`); a
+`pub(crate)` method or field on a re-exported type is fine. Format-on-save
+needs `~/.config/rustfmt/rustfmt.toml` with `edition = "2024"` (set up), or
+rustfmt fails silently on let-chains.
+
 ## Engine API (done)
 
-- `square::Square`: `from_algebraic`, `from_file_rank`, `file`, `rank`,
+All paths are root re-exports (`engine::X`).
+
+- `Square`: `from_algebraic`, `from_file_rank`, `file`, `rank`,
   `file_char`, `rank_char`, `Display` (`e4`).
-- `bitboard::Bitboard`: set ops, `is_empty`, iterates its squares.
-- `piece::{Color, PieceKind, Piece}`: `from_char` / `to_char`.
-- `moves::{Move, MoveKind, MoveList}`: `Move` is a `Copy` `u16` with
+- `Bitboard`: set ops, `is_empty`, iterates its squares.
+- `Color`, `PieceKind`, `Piece`: `from_char` / `to_char`.
+- `Move`, `MoveKind`, `MoveList`: `Move` is a `Copy` `u16` with
   `from`/`to`/`kind`. `MoveList` is a fixed array of 256 with `iter`,
-  `contains`, `len`.
-- `board::Board`: `from_fen`, `to_fen`, `make_move` (copy-make), `piece_at`,
+  `contains`, `len`. Also `CastlingRights`.
+- `Board`: `from_fen`, `to_fen`, `start`, `make_move` (copy-make), `piece_at`,
   `in_check`, `king_square`, `halfmove_clock`, `same_position`,
-  `insufficient_material`, `Display`, and `san(Move)` (in `san.rs`: `Nbd2`,
+  `insufficient_material`, `Display`, and `san(Move)` (`Nbd2`,
   `exd5`, `e8=Q`, `O-O`, `+`/`#`).
-- `movegen`: `generate_legal`, `generate_pseudo_legal`, `perft`. Verified by
+- `movegen::{generate_legal, generate_pseudo_legal, perft}`. Verified by
   perft on 5 standard positions.
-- `game::Game`: `from_fen`, `board`, `moves`, `san_moves` (cached, pushed on
+- `Game`: `from_fen`, `board`, `moves`, `san_moves` (cached, pushed on
   `play`, popped on `undo`), `result`, `legal_moves` (empty
   once over), `play(Move)`, `play_uci("e2e4" / "e7e8q")`, `undo`,
   `resign(Color)`, `agree_draw`. It keeps a `history: Vec<Board>` and detects
@@ -175,6 +212,9 @@ https://benj181.github.io/rust-chess/engine/ (engine docs), both built by
 7. Optional: persistence.
 
 ## Current status: milestones 2 and 3 done; AI (milestone 4) in progress
+
+The engine restructure from `ENGINE_STRUCTURE.md` is done (steps 1-6,
+see "Engine layout"); the AI work below continues from where it stopped.
 
 Explained before the AI (the user understood it): `app` is compiled twice
 (server: renders HTML strings; WASM: runs in the browser); the server only
