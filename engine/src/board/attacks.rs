@@ -1,5 +1,5 @@
 use crate::{
-    direction::Direction,
+    board::direction::Direction,
     types::{Bitboard, Color, Square},
 };
 

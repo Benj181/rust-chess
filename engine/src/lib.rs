@@ -18,9 +18,7 @@
 //! assert_ne!(after.side_to_move(), board.side_to_move());
 //! ```
 
-mod attacks;
 mod board;
-mod direction;
 mod eval;
 mod game;
 pub mod movegen;

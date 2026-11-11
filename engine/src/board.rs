@@ -1,7 +1,10 @@
 //! [`Board`]: a complete chess position.
 
+pub mod attacks;
+pub mod direction;
+
 use crate::{
-    attacks::{bishop_attacks, king_attacks, knight_attacks, pawn_attacks, rook_attacks},
+    board::attacks::{bishop_attacks, king_attacks, knight_attacks, pawn_attacks, rook_attacks},
     types::{Bitboard, Castle, CastlingRights, Color, Move, MoveKind, Piece, PieceKind, Square},
 };
 use std::fmt;
