@@ -203,7 +203,7 @@ https://benj181.github.io/rust-chess/engine/ (engine docs), both built by
 2. **Local board UI in Leptos**: done, see below.
 3. **Standalone build + GitHub Pages** (the user has no server to rent, so
    the AI version is the one that gets hosted): done.
-4. **AI**: evaluation plus alpha-beta search, with Zobrist hashing, running
+4. **AI**: done, see below. Evaluation plus alpha-beta search, with Zobrist hashing, running
    in the browser in the standalone version (later in a Web Worker or with a
    time budget so the page doesn't freeze). Needs an "opponent" abstraction
    in `app` (local / AI / online) where the other side's moves come from.
@@ -219,10 +219,14 @@ https://benj181.github.io/rust-chess/engine/ (engine docs), both built by
    sounds in `public/sounds/`, not Lichess/chess.com ones.
 7. Optional: persistence.
 
-## Current status: milestones 2 and 3 done; AI (milestone 4) in progress
+## Current status: milestones 1-4 done; next is multiplayer (milestone 5)
+
+The next work is the web server: see "Multiplayer" at the end of this file
+for the plan and where it stopped (step 1, the echo WebSocket, is the
+user's to write). The AI notes below are kept as a record of what exists.
 
 The engine restructure from `ENGINE_STRUCTURE.md` is done (steps 1-6,
-see "Engine layout"); the AI work below continues from where it stopped.
+see "Engine layout").
 
 Explained before the AI (the user understood it): `app` is compiled twice
 (server: renders HTML strings; WASM: runs in the browser); the server only
@@ -256,8 +260,8 @@ is private inside `search`, and its doc example lives on `negamax`):
   - mate score is `ply - MATE` (faster mates score higher);
     `to_table` / `from_table` shift mate scores by `ply` for the table;
   - move ordering in `search/ordering.rs`: hash move, then captures and
-    queen promotions by victim minus attacker / 10, then quiet moves
-    (`MoveList::sort_by_key` was added for it);
+    queen promotions by victim minus attacker / 10, then killers, then
+    quiet moves by history (picked lazily by `Picker`, no sorting);
   - quiescence: stand pat, then captures only; a side in check at depth 0
     gets one more ply instead (so mates are seen at the leaves);
   - iterative deepening 1..=depth, stops on the node budget (no clock in
@@ -270,9 +274,13 @@ is private inside `search`, and its doc example lives on `negamax`):
     child with one `make_move`; `generate_legal` uses it too), the search
     loops over pseudo-legal moves;
   - draws inside the search: 50-move clock and insufficient material.
-- Search optimizations (written by Claude on request, on the
-  `optimizations` branch; the user has NOT been taught these yet, explain
-  before building on them):
+- Search optimizations (written by Claude on request, merged into `main`
+  through pull request #1). A walkthrough for the user was started and is
+  paused: the ray table, the captures-only generator and the incremental
+  hash have been explained (the user moved on without answering the check
+  questions); still to explain, in this order: lazy picking, killers,
+  history, repetition draws, aspiration windows, reverse futility pruning,
+  null move, late move reductions. Only continue it if the user asks:
   - speed: a ray table for sliders (`RAYS` in `board/attacks.rs`, built
     on first use with `LazyLock`; a ray is cut behind the nearest
     blocker), a captures-only generator
@@ -512,7 +520,7 @@ Milestone 2 plan:
    Undo and Flip buttons.
 7. **Optional polish:** promotion picker, drag and drop.
 
-## Multiplayer (now milestone 5, on hold)
+## Multiplayer (milestone 5, next up)
 
 Plan:
 1. Echo WebSocket on the server (`/ws`).

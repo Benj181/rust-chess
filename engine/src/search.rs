@@ -319,8 +319,9 @@ impl Searcher {
             };
             let quiet = !is_loud(mv.kind());
 
-            let reduction = if quiet && !node.in_check && !child.in_check() {
-                reduction(node.depth, searched)
+            let wanted = reduction(node.depth, searched);
+            let reduction = if wanted > 0 && quiet && !node.in_check && !child.in_check() {
+                wanted
             } else {
                 0
             };
