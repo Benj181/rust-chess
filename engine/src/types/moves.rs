@@ -207,6 +207,14 @@ impl MoveList {
         self.moves.get(..self.len).unwrap_or(&[])
     }
 
+    /// Sorts the moves so that the smallest `key` comes first. Moves with
+    /// equal keys end up in no particular order.
+    pub fn sort_by_key<K: Ord>(&mut self, key: impl FnMut(&Move) -> K) {
+        if let Some(moves) = self.moves.get_mut(..self.len) {
+            moves.sort_unstable_by_key(key);
+        }
+    }
+
     /// The number of moves in the list.
     #[must_use]
     pub const fn len(&self) -> usize {

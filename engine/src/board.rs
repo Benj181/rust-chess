@@ -2,6 +2,7 @@
 
 pub mod attacks;
 pub mod direction;
+mod zobrist;
 
 use crate::{
     board::attacks::{bishop_attacks, king_attacks, knight_attacks, pawn_attacks, rook_attacks},

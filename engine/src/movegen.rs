@@ -151,16 +151,11 @@ pub fn generate_pseudo_legal(board: &Board, list: &mut MoveList) {
 /// Appends every legal move to `list`: the pseudo-legal moves that do not
 /// leave the mover's own king attacked.
 pub fn generate_legal(board: &Board, list: &mut MoveList) {
-    let us = board.side_to_move();
     let mut pseudo = MoveList::new();
     generate_pseudo_legal(board, &mut pseudo);
 
     for &mv in &pseudo {
-        let next = board.make_move(mv);
-        let king_safe = next
-            .king_square(us)
-            .is_some_and(|king| !next.is_square_attacked(king, us.opposite()));
-        if king_safe {
+        if board.try_move(mv).is_some() {
             list.push(mv);
         }
     }
@@ -179,6 +174,27 @@ impl Board {
         let mut moves = MoveList::new();
         generate_legal(self, &mut moves);
         moves
+    }
+
+    /// Plays the pseudo-legal move `mv` and returns the resulting position,
+    /// or `None` if the move is illegal because it leaves the mover's own
+    /// king attacked.
+    ///
+    /// The search uses this to test legality and get the next position with
+    /// a single [`make_move`](Self::make_move).
+    ///
+    /// ```
+    /// use engine::Board;
+    ///
+    /// let pinned = Board::from_fen("4r1k1/8/8/8/8/8/4N3/4K3 w - - 0 1").unwrap();
+    /// assert!(pinned.try_move(pinned.parse_uci("e1d1").unwrap()).is_some());
+    /// ```
+    #[must_use]
+    pub fn try_move(&self, mv: Move) -> Option<Self> {
+        let us = self.side_to_move();
+        let next = self.make_move(mv);
+        let king = next.king_square(us)?;
+        (!next.is_square_attacked(king, us.opposite())).then_some(next)
     }
 }
 

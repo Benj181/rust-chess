@@ -32,7 +32,7 @@ fn side_score(board: &Board, color: Color) -> i32 {
         .sum()
 }
 
-const fn material_value(kind: PieceKind) -> i32 {
+pub const fn material_value(kind: PieceKind) -> i32 {
     match kind {
         PieceKind::Pawn => 100,
         PieceKind::Knight | PieceKind::Bishop => 300,
