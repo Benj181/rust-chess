@@ -6,8 +6,6 @@ pub use result::{DrawReason, GameResult, MoveError, WinReason};
 
 use crate::{
     board::Board,
-    movegen::generate_legal,
-    notation::uci::parse_uci,
     types::{Bitboard, Color, Move, MoveList, PieceKind, Square},
 };
 use std::cmp::Ordering;
@@ -32,16 +30,6 @@ impl Game {
     #[must_use]
     pub fn new() -> Self {
         Self::from_board(Board::start())
-    }
-
-    /// Starts a game from the position in `fen`, or returns `None` if the FEN
-    /// is invalid.
-    ///
-    /// If that position is already checkmate or stalemate, the game starts
-    /// finished.
-    #[must_use]
-    pub fn from_fen(fen: &str) -> Option<Self> {
-        Board::from_fen(fen).map(Self::from_board)
     }
 
     /// The current position.
@@ -153,27 +141,6 @@ impl Game {
         Ok(())
     }
 
-    /// Plays a move given in UCI notation, such as `e2e4`, or `e7e8q` for a
-    /// promotion.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`MoveError::GameOver`] if the game has ended,
-    /// [`MoveError::InvalidNotation`] if `s` is not valid UCI notation, or
-    /// [`MoveError::IllegalMove`] if the move is not legal in the current
-    /// position.
-    pub fn play_uci(&mut self, s: &str) -> Result<(), MoveError> {
-        if self.result.is_some() {
-            return Err(MoveError::GameOver);
-        }
-        let (from, to, promo) = parse_uci(s).ok_or(MoveError::InvalidNotation)?;
-        let mv = self
-            .find_move(from, to, promo)
-            .ok_or(MoveError::IllegalMove)?;
-
-        self.play(mv)
-    }
-
     /// Takes back the last move, restoring the position and result before it.
     /// Does nothing at the start of the game.
     pub fn undo(&mut self) {
@@ -220,8 +187,7 @@ impl Game {
     }
 
     fn refresh(&mut self) {
-        self.legal = MoveList::new();
-        generate_legal(&self.board, &mut self.legal);
+        self.legal = self.board.legal_moves();
         self.result = self.detect_result();
         if self.result.is_some() {
             self.legal = MoveList::new();

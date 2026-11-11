@@ -64,6 +64,4 @@ pub enum MoveError {
     GameOver,
     /// The move is not legal in the current position.
     IllegalMove,
-    /// The UCI parsing failed due to invalid notation.
-    InvalidNotation,
 }

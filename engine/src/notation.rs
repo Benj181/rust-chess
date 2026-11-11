@@ -1,3 +1,3 @@
 mod fen;
 mod san;
-pub mod uci;
+mod uci;

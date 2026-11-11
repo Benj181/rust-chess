@@ -175,6 +175,22 @@ pub fn generate_legal(board: &Board, list: &mut MoveList) {
     }
 }
 
+impl Board {
+    /// Every legal move in this position, generated fresh on each call.
+    ///
+    /// ```
+    /// use engine::Board;
+    ///
+    /// assert_eq!(Board::start().legal_moves().len(), 20);
+    /// ```
+    #[must_use]
+    pub fn legal_moves(&self) -> MoveList {
+        let mut moves = MoveList::new();
+        generate_legal(self, &mut moves);
+        moves
+    }
+}
+
 /// Counts the positions reachable from `board` in exactly `depth` moves.
 ///
 /// Comparing the count with published numbers is the standard check that

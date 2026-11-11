@@ -14,12 +14,11 @@ impl Board {
     /// `mv` should be legal in this position.
     ///
     /// ```
-    /// use engine::{Board, Game};
+    /// use engine::Board;
     ///
-    /// let mut game = Game::new();
-    /// game.play_uci("g1f3").unwrap();
-    /// let mv = game.last_move().unwrap();
-    /// assert_eq!(Board::start().san(mv), "Nf3");
+    /// let board = Board::start();
+    /// let mv = board.parse_uci("g1f3").unwrap();
+    /// assert_eq!(board.san(mv), "Nf3");
     /// ```
     #[must_use]
     pub fn san(&self, mv: Move) -> String {

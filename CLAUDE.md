@@ -169,18 +169,22 @@ All paths are root re-exports (`engine::X`).
   `contains`, `len`. Also `CastlingRights`.
 - `Board`: `from_fen`, `to_fen`, `start`, `make_move` (copy-make), `piece_at`,
   `in_check`, `king_square`, `halfmove_clock`, `same_position`,
-  `insufficient_material`, `Display`, and `san(Move)` (`Nbd2`,
-  `exd5`, `e8=Q`, `O-O`, `+`/`#`).
+  `insufficient_material`, `Display`, `legal_moves() -> MoveList` (in
+  `movegen.rs`, computed fresh, never stored: boards stay small for
+  copy-make search), `san(Move)` (`Nbd2`, `exd5`, `e8=Q`, `O-O`, `+`/`#`)
+  and `parse_uci(&str) -> Option<Move>` (`e2e4`, `e7e8q`; needs the
+  position for the move kind). Castling FEN is private helpers in `fen.rs`.
 - `movegen::{generate_legal, generate_pseudo_legal, perft}`. Verified by
   perft on 5 standard positions.
-- `Game`: `from_fen`, `board`, `moves`, `san_moves` (cached, pushed on
-  `play`, popped on `undo`), `result`, `legal_moves` (empty
-  once over), `play(Move)`, `play_uci("e2e4" / "e7e8q")`, `undo`,
+- `Game`: `new`, `board`, `moves`, `san_moves` (cached, pushed on
+  `play`, popped on `undo`), `result`, `legal_moves` (a cache for the UI,
+  empty once over), `play(Move)` (the only way to play; text goes through
+  `game.board().parse_uci(s)` first), `undo`,
   `resign(Color)`, `agree_draw`. It keeps a `history: Vec<Board>` and detects
   checkmate, stalemate, the 50-move rule, threefold repetition and
   insufficient material automatically after every move.
 - `GameResult { Win { winner, reason: WinReason }, Draw(DrawReason) }` and
-  `MoveError { GameOver, IllegalMove, InvalidNotation }`.
+  `MoveError { GameOver, IllegalMove }`.
 
 Known simplification: threefold compares the en passant square even when no
 capture is possible (Lichess only counts it when it is). Fine for now.
@@ -206,7 +210,7 @@ https://benj181.github.io/rust-chess/engine/ (engine docs), both built by
    in `ActionBar`).
 5. **Multiplayer** (for fun, played locally / on the LAN): WebSocket game
    rooms in Axum. The server is authoritative and validates every move with
-   `Game::play_uci`. Clocks and timeouts.
+   `Board::parse_uci` + `Game::play`. Clocks and timeouts.
 6. **Polish**: original styling, my own SVG pieces, sounds, animations.
    Sounds should play from a Leptos `Effect` on game changes (not in click
    handlers), so server-sent moves make sound too; use original generated
@@ -435,7 +439,7 @@ Plan:
 1. Echo WebSocket on the server (`/ws`).
 2. Message types shared by server and browser (serde, JSON).
 3. Game rooms on the server; each owns a `Game` and validates moves with
-   `play_uci`.
+   `parse_uci` + `play`.
 4. The browser connects: the board sends moves and receives positions.
 5. Lobby: create a game, share a link, join.
 6. Clocks and timeouts.

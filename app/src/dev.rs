@@ -14,7 +14,10 @@ const KASPAROV_TOPALOV_1999: &[&str] = &[
 pub fn demo_game() -> Game {
     let mut game = Game::new();
     for mv in KASPAROV_TOPALOV_1999 {
-        if game.play_uci(mv).is_err() {
+        let Some(mv) = game.board().parse_uci(mv) else {
+            break;
+        };
+        if game.play(mv).is_err() {
             break;
         }
     }

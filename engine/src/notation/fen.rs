@@ -64,7 +64,7 @@ impl Board {
         };
         board.side_to_move = stm;
 
-        board.castling = CastlingRights::from_fen(fields.next()?)?;
+        board.castling = parse_castling(fields.next()?)?;
 
         board.en_passant = match fields.next()? {
             "-" => None,
@@ -116,56 +116,53 @@ impl Board {
             .map_or_else(|| "-".to_owned(), |sq| sq.to_string());
         format!(
             "{placement} {side} {} {en_passant} {} {}",
-            self.castling.to_fen(),
+            format_castling(self.castling),
             self.halfmove_clock,
             self.fullmove_number
         )
     }
 }
 
-impl CastlingRights {
-    /// Parses the castling field of a FEN string: `-`, or any combination of
-    /// `K`, `Q`, `k` and `q`. Returns `None` for any other character.
-    #[must_use]
-    pub fn from_fen(s: &str) -> Option<Self> {
-        let mut rights = Self::NONE;
-        if s == "-" {
-            return Some(rights);
-        }
-        for c in s.chars() {
-            let right = match c {
-                'K' => Self::WHITE_KING,
-                'Q' => Self::WHITE_QUEEN,
-                'k' => Self::BLACK_KING,
-                'q' => Self::BLACK_QUEEN,
-                _ => return None,
-            };
-            rights.insert(right);
-        }
-        Some(rights)
+/// Parses the castling field of a FEN string: `-`, or any combination of
+/// `K`, `Q`, `k` and `q`. Returns `None` for any other character.
+fn parse_castling(s: &str) -> Option<CastlingRights> {
+    let mut rights = CastlingRights::NONE;
+    if s == "-" {
+        return Some(rights);
     }
+    for c in s.chars() {
+        let right = match c {
+            'K' => CastlingRights::WHITE_KING,
+            'Q' => CastlingRights::WHITE_QUEEN,
+            'k' => CastlingRights::BLACK_KING,
+            'q' => CastlingRights::BLACK_QUEEN,
+            _ => return None,
+        };
+        rights.insert(right);
+    }
+    Some(rights)
+}
 
-    /// Formats the rights as the castling field of a FEN string, in the order
-    /// `KQkq`, or `-` if no side may castle.
-    #[must_use]
-    pub fn to_fen(self) -> String {
-        let field: String = [
-            (Self::WHITE_KING, 'K'),
-            (Self::WHITE_QUEEN, 'Q'),
-            (Self::BLACK_KING, 'k'),
-            (Self::BLACK_QUEEN, 'q'),
-        ]
-        .into_iter()
-        .filter(|&(right, _)| self.contains(right))
-        .map(|(_, symbol)| symbol)
-        .collect();
-        if field.is_empty() {
-            "-".to_owned()
-        } else {
-            field
-        }
+/// Formats `rights` as the castling field of a FEN string, in the order
+/// `KQkq`, or `-` if no side may castle.
+fn format_castling(rights: CastlingRights) -> String {
+    let field: String = [
+        (CastlingRights::WHITE_KING, 'K'),
+        (CastlingRights::WHITE_QUEEN, 'Q'),
+        (CastlingRights::BLACK_KING, 'k'),
+        (CastlingRights::BLACK_QUEEN, 'q'),
+    ]
+    .into_iter()
+    .filter(|&(right, _)| rights.contains(right))
+    .map(|(_, symbol)| symbol)
+    .collect();
+    if field.is_empty() {
+        "-".to_owned()
+    } else {
+        field
     }
 }
+
 fn push_empty(fen: &mut String, count: u32) {
     if count > 0
         && let Some(digit) = char::from_digit(count, 10)
