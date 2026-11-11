@@ -131,7 +131,7 @@ engine/src/
 ├── types/          square, piece, bitboard, moves, castling
 ├── board.rs        Board (fields private except the 5 FEN writes)
 ├── board/          attacks, direction (pub mod: movegen uses them),
-│                   magic (private: slider lookup tables), zobrist
+│                   zobrist
 ├── movegen.rs      pub mod
 ├── notation.rs     mod fen; mod san; pub mod uci;
 ├── notation/       fen (Board + CastlingRights FEN, start, START_FEN),
@@ -139,8 +139,7 @@ engine/src/
 ├── game.rs         Game; mod result + pub use
 ├── game/result.rs  GameResult, WinReason, DrawReason, MoveError
 ├── search.rs       pub mod: search, Limits, Report (Searcher is private)
-└── search/         private: eval (evaluate + PSTs), ordering, tt,
-                    exchange (static exchange evaluation)
+└── search/         private: eval (evaluate + PSTs), ordering, tt
 ```
 
 Rules: the app imports from the root (`engine::Board`, `engine::Square`,
@@ -274,25 +273,28 @@ is private inside `search`, and its doc example lives on `negamax`):
 - Search optimizations (written by Claude on request, on the
   `optimizations` branch; the user has NOT been taught these yet, explain
   before building on them):
-  - speed: magic bitboards (`board/magic.rs`, factors generated offline,
-    tables built on first use with `LazyLock`), a captures-only generator
+  - speed: a ray table for sliders (`RAYS` in `board/attacks.rs`, built
+    on first use with `LazyLock`; a ray is cut behind the nearest
+    blocker), a captures-only generator
     (`generate_pseudo_legal_captures`), the piece part of the Zobrist hash
     kept up to date in `put` / `remove` (`placement_hash`);
   - ordering: `Picker` (lazy selection instead of sorting), killer moves,
     history (`History` in `ordering.rs`);
-  - pruning: principal variation search (`scout`), null move
-    (`Board::pass`), late move reductions, reverse futility pruning
-    (both in `cutoff_without_moves`), delta pruning and losing captures
-    skipped in quiescence (`exchange::loses_material`), aspiration windows
+  - pruning: null move (`Board::pass`) and reverse futility pruning (both
+    in `cutoff_without_moves`), late move reductions (a reduced search
+    first, the full one only if it beats alpha), aspiration windows
     (`search_root`);
   - repetition: `Searcher.path` holds the hashes of the game's earlier
     positions plus the line being searched; `search_after(board, earlier,
     limits)` is `pub(crate)` and `Game::search` calls it.
 - Measured with a scratch tournament tool (not in the repo): matches at
   equal thinking time (node budgets scaled by measured speed) and a
-  Stockfish 19 gauntlet. Whole package is about +380 Elo in self-play over
-  the first search. Biggest single gains: move ordering, aspiration
-  windows, repetition, the speed group, null move.
+  Stockfish 19 gauntlet. The current search is about +315 Elo in
+  self-play over the first search.
+- Removed again at the user's request, to keep the code understandable
+  (together worth about 75 Elo; don't bring them back unless asked):
+  magic bitboards, principal variation search, delta pruning and static
+  exchange evaluation in quiescence.
 - Tried and dropped (no measurable gain): a per-square piece array for
   `piece_at`, pinned-piece legality shortcut, check extension, log-formula
   reductions, internal iterative reduction, deeper null move, late move

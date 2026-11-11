@@ -152,7 +152,7 @@ pub fn is_loud(kind: MoveKind) -> bool {
 
 /// The material a capture or promotion wins at once, before any recapture:
 /// the piece taken plus what a promoted pawn turns into.
-pub fn material_gain(board: &Board, mv: Move) -> i32 {
+fn material_gain(board: &Board, mv: Move) -> i32 {
     let kind = mv.kind();
     let victim = match kind {
         MoveKind::EnPassant => material_value(PieceKind::Pawn),

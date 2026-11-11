@@ -5,7 +5,6 @@
 //! iterative deepening and a transposition table.
 
 mod eval;
-mod exchange;
 mod ordering;
 mod tt;
 
@@ -13,8 +12,7 @@ use crate::{
     board::Board,
     search::{
         eval::evaluate,
-        exchange::loses_material,
-        ordering::{History, Killers, is_loud, material_gain, ordered_captures, ordered_moves},
+        ordering::{History, Killers, is_loud, ordered_captures, ordered_moves},
         tt::{Bound, Entry, Table},
     },
     types::{Move, PieceKind},
@@ -28,7 +26,6 @@ const NULL_MOVE_MIN_DEPTH: u32 = 3;
 const NULL_MOVE_REDUCTION: u32 = 3;
 const FUTILITY_MAX_DEPTH: u32 = 6;
 const FUTILITY_MARGIN: i32 = 100;
-const DELTA_MARGIN: i32 = 200;
 const ASPIRATION_MIN_DEPTH: u32 = 4;
 const ASPIRATION_MARGIN: i32 = 40;
 const ASPIRATION_GROWTH: i32 = 4;
@@ -242,31 +239,6 @@ impl Searcher {
         .saturating_neg()
     }
 
-    fn scout(
-        &mut self,
-        child: &Board,
-        depth: u32,
-        reduction: u32,
-        ply: i32,
-        alpha: i32,
-        beta: i32,
-    ) -> i32 {
-        let just_above = alpha.saturating_add(1);
-        let quick = self.reply(
-            child,
-            depth.saturating_sub(reduction),
-            ply,
-            alpha,
-            just_above,
-        );
-        let trusted = reduction == 0 && beta == just_above;
-        if quick <= alpha || trusted || self.stopped {
-            quick
-        } else {
-            self.reply(child, depth, ply, alpha, beta)
-        }
-    }
-
     fn negamax(
         &mut self,
         board: &Board,
@@ -304,8 +276,7 @@ impl Searcher {
             in_check,
             key,
         };
-        let narrow = beta.saturating_sub(alpha) <= 1;
-        if narrow
+        if ply > 0
             && may_pass
             && !in_check
             && beta.abs() < MATE_BOUND
@@ -348,21 +319,16 @@ impl Searcher {
             };
             let quiet = !is_loud(mv.kind());
 
-            let score = if searched == 0 {
-                self.reply(&child, next_depth, child_ply, alpha, beta)
+            let reduction = if quiet && !node.in_check && !child.in_check() {
+                reduction(node.depth, searched)
             } else {
-                let reduction = if quiet && !node.in_check {
-                    reduction(node.depth, searched)
-                } else {
-                    0
-                };
-                let reduction = if reduction > 0 && child.in_check() {
-                    0
-                } else {
-                    reduction
-                };
-                self.scout(&child, next_depth, reduction, child_ply, alpha, beta)
+                0
             };
+            let shallower = next_depth.saturating_sub(reduction);
+            let mut score = self.reply(&child, shallower, child_ply, alpha, beta);
+            if reduction > 0 && score > alpha && !self.stopped {
+                score = self.reply(&child, next_depth, child_ply, alpha, beta);
+            }
             if self.stopped {
                 return 0;
             }
@@ -409,20 +375,13 @@ impl Searcher {
             return 0;
         }
 
-        let standing = evaluate(board);
-        if standing >= beta {
-            return standing;
+        let mut best = evaluate(board);
+        if best >= beta {
+            return best;
         }
-        alpha = alpha.max(standing);
-        let mut best = standing;
+        alpha = alpha.max(best);
 
         for mv in ordered_captures(board) {
-            let hoped = standing
-                .saturating_add(material_gain(board, mv))
-                .saturating_add(DELTA_MARGIN);
-            if hoped <= alpha || loses_material(board, mv) {
-                continue;
-            }
             let Some(child) = board.try_move(mv) else {
                 continue;
             };

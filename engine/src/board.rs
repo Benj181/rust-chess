@@ -2,7 +2,6 @@
 
 pub mod attacks;
 pub mod direction;
-mod magic;
 mod zobrist;
 
 use crate::{
