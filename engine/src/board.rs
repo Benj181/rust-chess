@@ -2,6 +2,7 @@
 
 pub mod attacks;
 pub mod direction;
+mod magic;
 mod zobrist;
 
 use crate::{
@@ -325,6 +326,7 @@ impl Board {
         let mut next = self.clone();
         next.side_to_move = self.side_to_move.opposite();
         next.en_passant = None;
+        next.halfmove_clock = 0;
         next
     }
 

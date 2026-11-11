@@ -61,6 +61,10 @@ pub struct Report {
 /// until a limit is reached or a forced mate is found, and reports the result
 /// of the deepest search that finished.
 ///
+/// A lone board does not know which positions came before it, so this
+/// search cannot see a draw by repetition coming. For a game in progress use
+/// [`Game::search`](crate::Game::search).
+///
 /// ```
 /// use engine::{search::{search, Limits}, Board};
 ///
@@ -72,6 +76,13 @@ pub struct Report {
 /// ```
 #[must_use]
 pub fn search(board: &Board, limits: Limits) -> Report {
+    search_after(board, Vec::new(), limits)
+}
+
+/// Like [`search`], for a position reached through the positions with the
+/// hashes `earlier` (oldest first). Coming back to one of them, or to a
+/// position already on the line being searched, counts as a draw.
+pub(crate) fn search_after(board: &Board, earlier: Vec<u64>, limits: Limits) -> Report {
     let mut searcher = Searcher {
         table: Table::new(),
         nodes: 0,
@@ -80,6 +91,7 @@ pub fn search(board: &Board, limits: Limits) -> Report {
         root_move: None,
         killers: [[None; 2]; MAX_PLY],
         history: History::new(),
+        path: earlier,
     };
     let mut report = Report {
         best: board.legal_moves().iter().next().copied(),
@@ -113,6 +125,15 @@ struct Searcher {
     root_move: Option<Move>,
     killers: [Killers; MAX_PLY],
     history: History,
+    path: Vec<u64>,
+}
+
+struct Node<'a> {
+    board: &'a Board,
+    depth: u32,
+    ply: i32,
+    in_check: bool,
+    key: u64,
 }
 
 impl Searcher {
@@ -132,9 +153,10 @@ impl Searcher {
             .unwrap_or_default()
     }
 
-    fn remember_quiet_cutoff(&mut self, board: &Board, mv: Move, depth: u32, ply: i32) {
-        self.history.reward(board.side_to_move(), mv, depth);
-        if let Some(killers) = usize::try_from(ply)
+    fn remember_quiet_cutoff(&mut self, node: &Node, mv: Move) {
+        self.history
+            .reward(node.board.side_to_move(), mv, node.depth);
+        if let Some(killers) = usize::try_from(node.ply)
             .ok()
             .and_then(|ply| self.killers.get_mut(ply))
             && killers.first() != Some(&Some(mv))
@@ -143,15 +165,34 @@ impl Searcher {
         }
     }
 
-    fn passing_is_enough(&mut self, board: &Board, depth: u32, ply: i32, beta: i32) -> bool {
-        if depth < NULL_MOVE_MIN_DEPTH || !has_pieces(board) || evaluate(board) < beta {
+    fn is_repetition(&self, board: &Board, key: u64) -> bool {
+        self.path
+            .iter()
+            .rev()
+            .take(usize::from(board.halfmove_clock()))
+            .skip(1)
+            .step_by(2)
+            .any(|&earlier| earlier == key)
+    }
+
+    fn is_draw(&self, board: &Board, key: u64) -> bool {
+        board.halfmove_clock() >= 100
+            || board.insufficient_material()
+            || self.is_repetition(board, key)
+    }
+
+    fn passing_is_enough(&mut self, node: &Node, beta: i32) -> bool {
+        if node.depth < NULL_MOVE_MIN_DEPTH
+            || !has_pieces(node.board)
+            || evaluate(node.board) < beta
+        {
             return false;
         }
         let score = self
             .negamax(
-                &board.pass(),
-                depth.saturating_sub(NULL_MOVE_REDUCTION),
-                ply.saturating_add(1),
+                &node.board.pass(),
+                node.depth.saturating_sub(NULL_MOVE_REDUCTION),
+                node.ply.saturating_add(1),
                 beta.saturating_neg(),
                 beta.saturating_neg().saturating_add(1),
                 false,
@@ -202,22 +243,23 @@ impl Searcher {
         board: &Board,
         depth: u32,
         ply: i32,
-        mut alpha: i32,
+        alpha: i32,
         beta: i32,
         may_pass: bool,
     ) -> i32 {
         let in_check = board.in_check();
-        let Some(next_depth) = depth.checked_sub(1).or_else(|| in_check.then_some(0)) else {
+        let depth = depth.max(u32::from(in_check));
+        if depth == 0 {
             return self.quiesce(board, alpha, beta);
-        };
-        if self.count_node() {
-            return 0;
         }
-        if ply > 0 && (board.halfmove_clock() >= 100 || board.insufficient_material()) {
+        if self.count_node() {
             return 0;
         }
 
         let key = board.zobrist();
+        if ply > 0 && self.is_draw(board, key) {
+            return 0;
+        }
         let remembered = self.table.probe(key);
         if ply > 0
             && let Some(entry) = remembered
@@ -226,12 +268,19 @@ impl Searcher {
             return score;
         }
 
+        let node = Node {
+            board,
+            depth,
+            ply,
+            in_check,
+            key,
+        };
         let narrow = beta.saturating_sub(alpha) <= 1;
         if narrow
             && may_pass
             && !in_check
             && beta.abs() < MATE_BOUND
-            && self.passing_is_enough(board, depth, ply, beta)
+            && self.passing_is_enough(&node, beta)
         {
             return beta;
         }
@@ -239,36 +288,50 @@ impl Searcher {
             return 0;
         }
 
+        self.path.push(key);
+        let score = self.search_moves(&node, alpha, beta, remembered.map(|entry| entry.best));
+        self.path.pop();
+        score
+    }
+
+    fn search_moves(
+        &mut self,
+        node: &Node,
+        mut alpha: i32,
+        beta: i32,
+        hash_move: Option<Move>,
+    ) -> i32 {
+        let next_depth = node.depth.saturating_sub(1);
+        let child_ply = node.ply.saturating_add(1);
         let mut best: Option<(i32, Move)> = None;
         let mut bound = Bound::Upper;
         let mut searched: u32 = 0;
         let moves = ordered_moves(
-            board,
-            remembered.map(|entry| entry.best),
-            self.killers_at(ply),
+            node.board,
+            hash_move,
+            self.killers_at(node.ply),
             &self.history,
         );
 
         for mv in moves {
-            let Some(child) = board.try_move(mv) else {
+            let Some(child) = node.board.try_move(mv) else {
                 continue;
             };
             let quiet = !is_loud(mv.kind());
-            let child_ply = ply.saturating_add(1);
 
-            let reduction = if quiet && !in_check {
-                reduction(depth, searched)
-            } else {
-                0
-            };
-            let reduction = if reduction > 0 && child.in_check() {
-                0
-            } else {
-                reduction
-            };
             let score = if searched == 0 {
                 self.reply(&child, next_depth, child_ply, alpha, beta)
             } else {
+                let reduction = if quiet && !node.in_check {
+                    reduction(node.depth, searched)
+                } else {
+                    0
+                };
+                let reduction = if reduction > 0 && child.in_check() {
+                    0
+                } else {
+                    reduction
+                };
                 self.scout(&child, next_depth, reduction, child_ply, alpha, beta)
             };
             if self.stopped {
@@ -278,7 +341,7 @@ impl Searcher {
 
             if best.is_none_or(|(best_score, _)| score > best_score) {
                 best = Some((score, mv));
-                if ply == 0 {
+                if node.ply == 0 {
                     self.root_move = Some(mv);
                 }
             }
@@ -289,23 +352,23 @@ impl Searcher {
             if alpha >= beta {
                 bound = Bound::Lower;
                 if quiet {
-                    self.remember_quiet_cutoff(board, mv, depth, ply);
+                    self.remember_quiet_cutoff(node, mv);
                 }
                 break;
             }
         }
 
         let Some((score, best_move)) = best else {
-            return if in_check {
-                ply.saturating_sub(MATE)
+            return if node.in_check {
+                node.ply.saturating_sub(MATE)
             } else {
                 0
             };
         };
         self.table.store(Entry {
-            key,
-            depth,
-            score: to_table(score, ply),
+            key: node.key,
+            depth: node.depth,
+            score: to_table(score, node.ply),
             bound,
             best: best_move,
         });
