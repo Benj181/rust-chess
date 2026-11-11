@@ -90,10 +90,7 @@ impl Game {
         to: Square,
         promotion: Option<PieceKind>,
     ) -> Option<Move> {
-        self.legal
-            .iter()
-            .find(|mv| mv.from() == from && mv.to() == to && mv.kind().promotion() == promotion)
-            .copied()
+        self.legal.find(from, to, promotion)
     }
 
     /// The squares the piece on `from` can legally move to. Empty if the
@@ -208,7 +205,7 @@ impl Game {
         if self.board.halfmove_clock() >= 100 {
             return Some(GameResult::Draw(DrawReason::FiftyMoveRule));
         }
-        if self.repetitions() >= 2 {
+        if self.occurrences() >= 3 {
             return Some(GameResult::Draw(DrawReason::ThreefoldRepetition));
         }
         if self.board.insufficient_material() {
@@ -217,11 +214,12 @@ impl Game {
         None
     }
 
-    fn repetitions(&self) -> usize {
+    fn occurrences(&self) -> usize {
         self.history
             .iter()
             .filter(|earlier| earlier.same_position(&self.board))
             .count()
+            .saturating_add(1)
     }
 
     const fn finish(&mut self, result: GameResult) -> Result<(), MoveError> {

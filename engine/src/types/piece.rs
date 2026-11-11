@@ -66,6 +66,19 @@ impl PieceKind {
             Self::King => 0,
         }
     }
+
+    /// The lowercase letter for this kind: `p`, `n`, `b`, `r`, `q` or `k`.
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Pawn => 'p',
+            Self::Knight => 'n',
+            Self::Bishop => 'b',
+            Self::Rook => 'r',
+            Self::Queen => 'q',
+            Self::King => 'k',
+        }
+    }
 }
 
 /// A piece: a kind together with the color it belongs to.
@@ -106,17 +119,10 @@ impl Piece {
     /// The FEN letter for this piece, the inverse of [`from_char`](Self::from_char).
     #[must_use]
     pub const fn to_char(self) -> char {
-        let c = match self.kind {
-            PieceKind::Pawn => 'p',
-            PieceKind::Knight => 'n',
-            PieceKind::Bishop => 'b',
-            PieceKind::Rook => 'r',
-            PieceKind::Queen => 'q',
-            PieceKind::King => 'k',
-        };
+        let letter = self.kind.letter();
         match self.color {
-            Color::White => c.to_ascii_uppercase(),
-            Color::Black => c,
+            Color::White => letter.to_ascii_uppercase(),
+            Color::Black => letter,
         }
     }
 

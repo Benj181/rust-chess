@@ -2,7 +2,7 @@
 
 mod eval;
 
-use crate::{board::Board, movegen::generate_legal, search::eval::evaluate, types::MoveList};
+use crate::{board::Board, search::eval::evaluate};
 
 const MATE: i32 = 100_000;
 
@@ -30,11 +30,10 @@ pub fn negamax(board: &Board, depth: u32) -> i32 {
         return evaluate(board);
     };
 
-    let mut moves = MoveList::new();
-    generate_legal(board, &mut moves);
-    moves
-        .into_iter()
-        .map(|mv| negamax(&board.make_move(*mv), next).saturating_neg())
+    board
+        .legal_moves()
+        .iter()
+        .map(|&mv| negamax(&board.make_move(mv), next).saturating_neg())
         .max()
         .unwrap_or_else(|| if board.in_check() { -MATE } else { 0 })
 }

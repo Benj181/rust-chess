@@ -32,43 +32,20 @@ impl Board {
     /// ```
     #[must_use]
     pub fn from_fen(fen: &str) -> Option<Self> {
-        let mut board = Self::empty();
         let mut fields = fen.split_whitespace();
-        let placement = fields.next()?;
-        if placement.split('/').count() != 8 {
-            return None;
-        }
-        for (chunk, rank) in placement.split('/').zip((0..8).rev()) {
-            let mut file: u8 = 0;
-            for c in chunk.chars() {
-                if let Some(incr) = c.to_digit(10) {
-                    if !(1..=8).contains(&incr) {
-                        return None;
-                    }
-                    file = file.checked_add(u8::try_from(incr).ok()?)?;
-                } else {
-                    let piece = Piece::from_char(c)?;
-                    let sq = Square::from_file_rank(file, rank)?;
-                    board.put(piece, sq);
-                    file = file.checked_add(1)?;
-                }
-            }
-            if file != 8 {
-                return None;
-            }
-        }
-        let stm = match fields.next()? {
+        let mut board = parse_placement(fields.next()?)?;
+
+        board.side_to_move = match fields.next()? {
             "w" => Color::White,
             "b" => Color::Black,
             _ => return None,
         };
-        board.side_to_move = stm;
 
         board.castling = parse_castling(fields.next()?)?;
 
         board.en_passant = match fields.next()? {
             "-" => None,
-            pos => Some(Square::from_algebraic(pos)?),
+            square => Some(Square::from_algebraic(square)?),
         };
 
         board.halfmove_clock = fields.next().map_or(Some(0), |s| s.parse().ok())?;
@@ -121,6 +98,36 @@ impl Board {
             self.fullmove_number
         )
     }
+}
+
+/// Parses the piece placement field of a FEN string into a board that has
+/// the pieces and nothing else set: eight ranks separated by `/`, from rank 8
+/// down to rank 1, each a mix of piece letters and digits for empty squares.
+/// Returns `None` unless there are exactly eight ranks of eight files.
+fn parse_placement(placement: &str) -> Option<Board> {
+    let mut board = Board::empty();
+    let mut ranks = (0..8).rev();
+    for rank_text in placement.split('/') {
+        let rank = ranks.next()?;
+        let mut file: u8 = 0;
+        for symbol in rank_text.chars() {
+            if let Some(empty_squares) = symbol.to_digit(10) {
+                if !(1..=8).contains(&empty_squares) {
+                    return None;
+                }
+                file = file.checked_add(u8::try_from(empty_squares).ok()?)?;
+            } else {
+                let piece = Piece::from_char(symbol)?;
+                let sq = Square::from_file_rank(file, rank)?;
+                board.put(piece, sq);
+                file = file.checked_add(1)?;
+            }
+        }
+        if file != 8 {
+            return None;
+        }
+    }
+    ranks.next().is_none().then_some(board)
 }
 
 /// Parses the castling field of a FEN string: `-`, or any combination of

@@ -71,7 +71,8 @@ impl Board {
         self.castling
     }
 
-    /// Half move clock.
+    /// The number of half-moves since the last capture or pawn move. The
+    /// fifty-move rule draws the game when it reaches 100.
     #[must_use]
     pub const fn halfmove_clock(&self) -> u16 {
         self.halfmove_clock
@@ -181,24 +182,15 @@ impl Board {
     pub fn is_square_attacked(&self, sq: Square, by: Color) -> bool {
         let attackers = |kind| self.pieces_of(by, kind);
         let occupied = self.occupied();
-
-        if !(knight_attacks(sq) & attackers(PieceKind::Knight)).is_empty() {
-            return true;
-        }
-        if !(king_attacks(sq) & attackers(PieceKind::King)).is_empty() {
-            return true;
-        }
-        if pawn_attacks(by, attackers(PieceKind::Pawn)).contains(sq) {
-            return true;
-        }
         let queens = attackers(PieceKind::Queen);
-        if !(rook_attacks(sq, occupied) & (attackers(PieceKind::Rook) | queens)).is_empty() {
-            return true;
-        }
-        if !(bishop_attacks(sq, occupied) & (attackers(PieceKind::Bishop) | queens)).is_empty() {
-            return true;
-        }
-        false
+        let straight_sliders = attackers(PieceKind::Rook) | queens;
+        let diagonal_sliders = attackers(PieceKind::Bishop) | queens;
+
+        knight_attacks(sq).intersects(attackers(PieceKind::Knight))
+            || king_attacks(sq).intersects(attackers(PieceKind::King))
+            || pawn_attacks(by, attackers(PieceKind::Pawn)).contains(sq)
+            || rook_attacks(sq, occupied).intersects(straight_sliders)
+            || bishop_attacks(sq, occupied).intersects(diagonal_sliders)
     }
 
     fn capture_at(&mut self, sq: Square) {
@@ -212,17 +204,9 @@ impl Board {
         self.put(piece, to);
     }
 
-    const fn promote(
-        &mut self,
-        pawn: Piece,
-        from: Square,
-        to: Square,
-        promoted: Option<PieceKind>,
-    ) {
+    const fn promote(&mut self, pawn: Piece, from: Square, to: Square, promoted: PieceKind) {
         self.remove(pawn, from);
-        if let Some(kind) = promoted {
-            self.put(Piece::new(pawn.color(), kind), to);
-        }
+        self.put(Piece::new(pawn.color(), promoted), to);
     }
 
     fn revoke_castling(&mut self, sq: Square) {
@@ -296,14 +280,18 @@ impl Board {
             | MoveKind::PromoBishop
             | MoveKind::PromoRook
             | MoveKind::PromoQueen => {
-                next.promote(mover, from, to, kind.promotion());
+                if let Some(promoted) = kind.promotion() {
+                    next.promote(mover, from, to, promoted);
+                }
             }
             MoveKind::CapturePromoKnight
             | MoveKind::CapturePromoBishop
             | MoveKind::CapturePromoRook
             | MoveKind::CapturePromoQueen => {
                 next.capture_at(to);
-                next.promote(mover, from, to, kind.promotion());
+                if let Some(promoted) = kind.promotion() {
+                    next.promote(mover, from, to, promoted);
+                }
             }
         }
 
@@ -330,18 +318,15 @@ impl Board {
         if !(self.pawns | self.rooks | self.queens).is_empty() {
             return false;
         }
-        if (self.knights | self.bishops).into_iter().count() <= 1 {
+        if (self.knights | self.bishops).count() <= 1 {
             return true;
         }
         if !self.knights.is_empty() {
             return false;
         }
-        let mut colors = self
-            .bishops
-            .into_iter()
-            .map(|sq| (sq.file() ^ sq.rank()) & 1);
-        let first = colors.next();
-        colors.all(|color| Some(color) == first)
+        let mut on_dark = self.bishops.into_iter().map(Square::is_dark);
+        let first = on_dark.next();
+        on_dark.all(|dark| Some(dark) == first)
     }
 
     /// Whether `self` and `other` are the same position for repetition: the
@@ -365,9 +350,9 @@ impl Board {
     /// Whether the side to move is in check.
     #[must_use]
     pub fn in_check(&self) -> bool {
-        let me = self.side_to_move();
-        self.king_square(me)
-            .is_some_and(|king| self.is_square_attacked(king, me.opposite()))
+        let us = self.side_to_move();
+        self.king_square(us)
+            .is_some_and(|king| self.is_square_attacked(king, us.opposite()))
     }
 }
 

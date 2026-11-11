@@ -71,6 +71,12 @@ impl Bitboard {
         self.0 == Self::EMPTY.0
     }
 
+    /// Whether the two sets share at least one square.
+    #[must_use]
+    pub const fn intersects(self, other: Self) -> bool {
+        self.0 & other.0 != 0
+    }
+
     /// How many squares are in the set.
     #[must_use]
     pub const fn count(self) -> u32 {

@@ -22,7 +22,7 @@ impl Board {
     pub fn parse_uci(&self, s: &str) -> Option<Move> {
         let from = Square::from_algebraic(s.get(..2)?)?;
         let to = Square::from_algebraic(s.get(2..4)?)?;
-        let promo = match s.get(4..)? {
+        let promotion = match s.get(4..)? {
             "" => None,
             "n" => Some(PieceKind::Knight),
             "b" => Some(PieceKind::Bishop),
@@ -30,9 +30,6 @@ impl Board {
             "q" => Some(PieceKind::Queen),
             _ => return None,
         };
-        self.legal_moves()
-            .iter()
-            .find(|mv| mv.from() == from && mv.to() == to && mv.kind().promotion() == promo)
-            .copied()
+        self.legal_moves().find(from, to, promotion)
     }
 }

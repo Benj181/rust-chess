@@ -25,31 +25,22 @@ const PIECE_ATTACKS: [(PieceKind, AttacksFn); 5] = [
     (PieceKind::King, |sq, _| king_attacks(sq)),
 ];
 
-fn push_targets(
-    from: Square,
-    targets: Bitboard,
-    ours: Bitboard,
-    theirs: Bitboard,
-    list: &mut MoveList,
-) {
-    for to in targets & !ours {
-        if theirs.contains(to) {
-            list.push(Move::new(from, to, MoveKind::Capture));
-        } else {
-            list.push(Move::new(from, to, MoveKind::Quiet));
-        }
+fn push_moves_to(from: Square, targets: Bitboard, kind: MoveKind, list: &mut MoveList) {
+    for to in targets {
+        list.push(Move::new(from, to, kind));
     }
 }
 
-fn piece_moves(board: &Board, list: &mut MoveList) {
+fn non_pawn_moves(board: &Board, list: &mut MoveList) {
     let us = board.side_to_move();
-    let ours = board.occupied_by(us);
     let theirs = board.occupied_by(us.opposite());
     let occupied = board.occupied();
 
     for (kind, attacks) in PIECE_ATTACKS {
         for from in board.pieces_of(us, kind) {
-            push_targets(from, attacks(from, occupied), ours, theirs, list);
+            let targets = attacks(from, occupied);
+            push_moves_to(from, targets & theirs, MoveKind::Capture, list);
+            push_moves_to(from, targets & !occupied, MoveKind::Quiet, list);
         }
     }
 }
@@ -107,7 +98,7 @@ fn pawn_moves(board: &Board, list: &mut MoveList) {
         for to in single {
             push_pawn_move(from, to, false, promo_rank, list);
         }
-        if !(from_bb & start_rank).is_empty() {
+        if start_rank.contains(from) {
             for to in forward.step(single) & empty {
                 list.push(Move::new(from, to, MoveKind::DoublePush));
             }
@@ -135,7 +126,7 @@ fn castling_moves(board: &Board, list: &mut MoveList) {
     for castle in Castle::for_color(us) {
         if board.castling().contains(castle.right)
             && kings.contains(castle.king_from)
-            && (occupied & castle.must_be_empty).is_empty()
+            && !occupied.intersects(castle.must_be_empty)
             && !castle
                 .must_be_safe
                 .into_iter()
@@ -153,7 +144,7 @@ fn castling_moves(board: &Board, list: &mut MoveList) {
 /// pass through an attacked square.
 pub fn generate_pseudo_legal(board: &Board, list: &mut MoveList) {
     pawn_moves(board, list);
-    piece_moves(board, list);
+    non_pawn_moves(board, list);
     castling_moves(board, list);
 }
 
@@ -209,14 +200,13 @@ pub fn perft(board: &Board, depth: u32) -> u64 {
     if depth == 0 {
         return 1;
     }
-    let mut list = MoveList::new();
-    generate_legal(board, &mut list);
+    let moves = board.legal_moves();
     if depth == 1 {
-        return u64::try_from(list.len()).unwrap_or(u64::MAX);
+        return u64::try_from(moves.len()).unwrap_or(u64::MAX);
     }
 
     let mut nodes: u64 = 0;
-    for &mv in &list {
+    for &mv in &moves {
         nodes = nodes.saturating_add(perft(&board.make_move(mv), depth.saturating_sub(1)));
     }
     nodes

@@ -2,8 +2,7 @@
 
 use crate::{
     board::Board,
-    movegen::generate_legal,
-    types::{Color, Move, MoveKind, MoveList, Piece, PieceKind},
+    types::{Move, MoveKind, Piece, PieceKind},
 };
 
 impl Board {
@@ -37,32 +36,26 @@ impl Board {
             return mv.to_string();
         };
 
-        let capture = if kind.is_capture() { "x" } else { "" };
-        let promotion = kind
-            .promotion()
-            .map_or(String::new(), |promo| format!("={}", letter(promo)));
-
         if piece.kind() == PieceKind::Pawn {
-            let file = if kind.is_capture() {
-                mv.from().file_char().to_string()
-            } else {
-                String::new()
-            };
-            return format!("{file}{capture}{}{promotion}", mv.to());
+            pawn_san(mv)
+        } else {
+            self.piece_san(mv, piece)
         }
+    }
 
+    fn piece_san(&self, mv: Move, piece: Piece) -> String {
+        let capture = if mv.kind().is_capture() { "x" } else { "" };
         format!(
             "{}{}{capture}{}",
-            letter(piece.kind()),
+            upper_letter(piece.kind()),
             self.disambiguation(mv, piece),
             mv.to()
         )
     }
 
     fn disambiguation(&self, mv: Move, piece: Piece) -> String {
-        let mut legal = MoveList::new();
-        generate_legal(self, &mut legal);
-        let rivals: Vec<_> = legal
+        let rivals: Vec<_> = self
+            .legal_moves()
             .iter()
             .filter(|other| {
                 other.to() == mv.to()
@@ -89,12 +82,29 @@ impl Board {
         if !after.in_check() {
             return "";
         }
-        let mut replies = MoveList::new();
-        generate_legal(&after, &mut replies);
-        if replies.is_empty() { "#" } else { "+" }
+        if after.legal_moves().is_empty() {
+            "#"
+        } else {
+            "+"
+        }
     }
 }
 
-const fn letter(kind: PieceKind) -> char {
-    Piece::new(Color::White, kind).to_char()
+fn pawn_san(mv: Move) -> String {
+    let kind = mv.kind();
+    let mut san = String::new();
+    if kind.is_capture() {
+        san.push(mv.from().file_char());
+        san.push('x');
+    }
+    san.push_str(&mv.to().to_string());
+    if let Some(promoted) = kind.promotion() {
+        san.push('=');
+        san.push(upper_letter(promoted));
+    }
+    san
+}
+
+const fn upper_letter(kind: PieceKind) -> char {
+    kind.letter().to_ascii_uppercase()
 }

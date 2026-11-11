@@ -1,6 +1,6 @@
 //! Moves: [`MoveKind`], the compact [`Move`] and the fixed-capacity [`MoveList`].
 
-use crate::types::{Color, Piece, PieceKind, Square};
+use crate::types::{PieceKind, Square};
 use std::fmt;
 
 const MAX_MOVES: usize = 256;
@@ -125,7 +125,7 @@ impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.from(), self.to())?;
         if let Some(kind) = self.kind().promotion() {
-            write!(f, "{}", Piece::new(Color::Black, kind).to_char())?;
+            write!(f, "{}", kind.letter())?;
         }
         Ok(())
     }
@@ -228,6 +228,16 @@ impl MoveList {
     #[must_use]
     pub fn contains(&self, mv: Move) -> bool {
         self.as_slice().contains(&mv)
+    }
+
+    /// The move from `from` to `to` that promotes to `promotion`, or `None`
+    /// if the list has no such move. Pass `None` as `promotion` for a move
+    /// that is not a promotion.
+    #[must_use]
+    pub fn find(&self, from: Square, to: Square, promotion: Option<PieceKind>) -> Option<Move> {
+        self.iter()
+            .find(|mv| mv.from() == from && mv.to() == to && mv.kind().promotion() == promotion)
+            .copied()
     }
 }
 

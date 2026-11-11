@@ -162,11 +162,11 @@ All paths are root re-exports (`engine::X`).
 
 - `Square`: `from_algebraic`, `from_file_rank`, `file`, `rank`,
   `file_char`, `rank_char`, `Display` (`e4`).
-- `Bitboard`: set ops, `is_empty`, iterates its squares.
-- `Color`, `PieceKind`, `Piece`: `from_char` / `to_char`.
+- `Bitboard`: set ops, `is_empty`, `intersects`, iterates its squares.
+- `Color`, `PieceKind` (`letter`: lowercase `p`..`k`), `Piece`: `from_char` / `to_char`.
 - `Move`, `MoveKind`, `MoveList`: `Move` is a `Copy` `u16` with
   `from`/`to`/`kind`. `MoveList` is a fixed array of 256 with `iter`,
-  `contains`, `len`. Also `CastlingRights`.
+  `contains`, `find(from, to, promotion)`, `len`. Also `CastlingRights`.
 - `Board`: `from_fen`, `to_fen`, `start`, `make_move` (copy-make), `piece_at`,
   `in_check`, `king_square`, `halfmove_clock`, `same_position`,
   `insufficient_material`, `Display`, `legal_moves() -> MoveList` (in
@@ -245,7 +245,7 @@ is private inside `search`, and its doc example lives on `negamax`):
   (Leptos type depth on native); use `-p engine`.
 - `engine/src/search.rs`: `negamax(&Board, depth: u32) -> i32`:
   `let Some(next) = depth.checked_sub(1) else { return evaluate(board) }`,
-  then one iterator chain over `generate_legal`: `map(-negamax(child,
+  then one iterator chain over `board.legal_moves()`: `map(-negamax(child,
   next))` (`saturating_neg`), `.max()`, `.unwrap_or_else(..)` with
   `-MATE` (`MATE = 100_000`) in check, else 0 (stalemate). Mate in one
   needs depth 2 (leaves only evaluate; kept that way on purpose).

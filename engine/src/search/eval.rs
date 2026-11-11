@@ -12,33 +12,38 @@ use crate::{
 /// (piece-square tables).
 #[must_use]
 pub fn evaluate(board: &Board) -> i32 {
-    let me = board.side_to_move();
+    let us = board.side_to_move();
 
-    let mine = side_score(board, me);
-    let theirs = side_score(board, me.opposite());
+    let ours = side_score(board, us);
+    let theirs = side_score(board, us.opposite());
 
-    mine.saturating_sub(theirs)
+    ours.saturating_sub(theirs)
 }
 
 fn side_score(board: &Board, color: Color) -> i32 {
-    let material = i32::try_from(board.material(color))
-        .unwrap_or(0)
-        .saturating_mul(100);
-    material.saturating_add(
-        PieceKind::ALL
-            .into_iter()
-            .flat_map(|kind| {
-                board
-                    .pieces_of(color, kind)
-                    .into_iter()
-                    .map(move |sq| square_bonus(kind, color, sq))
-            })
-            .sum(),
-    )
+    PieceKind::ALL
+        .into_iter()
+        .flat_map(|kind| {
+            board
+                .pieces_of(color, kind)
+                .into_iter()
+                .map(move |sq| material_value(kind).saturating_add(square_bonus(kind, color, sq)))
+        })
+        .sum()
+}
+
+const fn material_value(kind: PieceKind) -> i32 {
+    match kind {
+        PieceKind::Pawn => 100,
+        PieceKind::Knight | PieceKind::Bishop => 300,
+        PieceKind::Rook => 500,
+        PieceKind::Queen => 900,
+        PieceKind::King => 0,
+    }
 }
 
 #[rustfmt::skip]
-const KNIGHT: [i32; 64] = [
+const KNIGHT_BONUS: [i32; 64] = [
     -50, -40, -30, -30, -30, -30, -40, -50,
     -40, -20,   0,   0,   0,   0, -20, -40,
     -30,   0,  10,  15,  15,  10,   0, -30,
@@ -50,7 +55,7 @@ const KNIGHT: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-const PAWN: [i32; 64] = [
+const PAWN_BONUS: [i32; 64] = [
       0,   0,   0,   0,   0,   0,   0,   0,
      50,  50,  50,  50,  50,  50,  50,  50,
      10,  10,  20,  30,  30,  20,  10,  10,
@@ -62,7 +67,7 @@ const PAWN: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-const BISHOP: [i32; 64] = [
+const BISHOP_BONUS: [i32; 64] = [
     -20, -10, -10, -10, -10, -10, -10, -20,
     -10,   0,   0,   0,   0,   0,   0, -10,
     -10,   0,   5,  10,  10,   5,   0, -10,
@@ -74,7 +79,7 @@ const BISHOP: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-const ROOK: [i32; 64] = [
+const ROOK_BONUS: [i32; 64] = [
       0,   0,   0,   0,   0,   0,   0,   0,
       5,  10,  10,  10,  10,  10,  10,   5,
      -5,   0,   0,   0,   0,   0,   0,  -5,
@@ -86,7 +91,7 @@ const ROOK: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-const QUEEN: [i32; 64] = [
+const QUEEN_BONUS: [i32; 64] = [
     -20, -10, -10,  -5,  -5, -10, -10, -20,
     -10,   0,   0,   0,   0,   0,   0, -10,
     -10,   0,   5,   5,   5,   5,   0, -10,
@@ -98,7 +103,7 @@ const QUEEN: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-const KING: [i32; 64] = [
+const KING_BONUS: [i32; 64] = [
     -30, -40, -40, -50, -50, -40, -40, -30,
     -30, -40, -40, -50, -50, -40, -40, -30,
     -30, -40, -40, -50, -50, -40, -40, -30,
@@ -110,13 +115,13 @@ const KING: [i32; 64] = [
 ];
 
 fn square_bonus(kind: PieceKind, color: Color, sq: Square) -> i32 {
-    let table = match &kind {
-        PieceKind::Pawn => &PAWN,
-        PieceKind::Knight => &KNIGHT,
-        PieceKind::Bishop => &BISHOP,
-        PieceKind::Rook => &ROOK,
-        PieceKind::Queen => &QUEEN,
-        PieceKind::King => &KING,
+    let table = match kind {
+        PieceKind::Pawn => &PAWN_BONUS,
+        PieceKind::Knight => &KNIGHT_BONUS,
+        PieceKind::Bishop => &BISHOP_BONUS,
+        PieceKind::Rook => &ROOK_BONUS,
+        PieceKind::Queen => &QUEEN_BONUS,
+        PieceKind::King => &KING_BONUS,
     };
 
     let index = match color {

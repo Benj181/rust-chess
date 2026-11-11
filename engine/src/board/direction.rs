@@ -1,5 +1,9 @@
+//! [`Direction`]: the eight directions a piece can slide in.
+
 use crate::types::{Bitboard, Square};
 
+/// One of the eight compass directions on the board, seen from White's
+/// side: north is toward rank 8 and east is toward the h-file.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Direction {
     North,
@@ -13,7 +17,9 @@ pub enum Direction {
 }
 
 impl Direction {
+    /// The four directions a rook slides in.
     pub const ROOK: [Self; 4] = [Self::North, Self::South, Self::East, Self::West];
+    /// The four directions a bishop slides in.
     pub const BISHOP: [Self; 4] = [
         Self::NorthEast,
         Self::NorthWest,
@@ -21,6 +27,8 @@ impl Direction {
         Self::SouthWest,
     ];
 
+    /// Every square of `bb` moved one step in this direction. Squares that
+    /// would leave the board are dropped.
     #[must_use]
     pub const fn step(self, bb: Bitboard) -> Bitboard {
         match self {
@@ -35,6 +43,7 @@ impl Direction {
         }
     }
 
+    /// How many steps `sq` is from the edge of the board in this direction.
     #[must_use]
     pub const fn steps_to_edge(self, sq: Square) -> u8 {
         let north = 7u8.saturating_sub(sq.rank());
