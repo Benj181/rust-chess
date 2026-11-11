@@ -3,7 +3,7 @@
 
 use crate::types::Move;
 
-const SLOTS: usize = 131_072;
+const SLOTS: usize = 1 << 17;
 
 /// How an entry's score relates to the true score of its position.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -37,8 +37,8 @@ impl Table {
     }
 
     fn index(&self, key: u64) -> Option<usize> {
-        let len = u64::try_from(self.slots.len()).ok()?;
-        usize::try_from(key.checked_rem(len)?).ok()
+        let mask = u64::try_from(self.slots.len().checked_sub(1)?).ok()?;
+        usize::try_from(key & mask).ok()
     }
 
     pub fn probe(&self, key: u64) -> Option<Entry> {

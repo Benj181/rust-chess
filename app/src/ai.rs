@@ -1,29 +1,29 @@
 use crate::state::PlayState;
 use engine::{
     search::{search, Limits},
-    Board, Color, GameResult,
+    Board, Color, Game, GameResult,
 };
 use leptos::prelude::*;
 use std::time::Duration;
 
 const LIMITS: Limits = Limits {
-    depth: 12,
+    depth: 64,
     nodes: 1_000_000,
 };
 const EVAL_LIMITS: Limits = Limits {
-    depth: 12,
+    depth: 64,
     nodes: 30_000,
 };
 const PAINT_FIRST: Duration = Duration::from_millis(50);
 
-fn board_to_answer(state: PlayState) -> Option<Board> {
+fn game_to_answer(state: PlayState) -> Option<Game> {
     let waiting = state.ai_to_move() && state.game.with(|g| g.result().is_none());
-    waiting.then(|| state.game.with(|g| g.board().clone()))
+    waiting.then(|| state.game.get())
 }
 
-fn think(state: PlayState, board: &Board) {
+fn think(state: PlayState, game: &Game) {
     let started = js_sys::Date::now();
-    let report = search(board, LIMITS);
+    let report = game.search(LIMITS);
     let ms = js_sys::Date::now() - started;
     leptos::logging::log!(
         "search: depth {}, {} nodes, {ms} ms",
@@ -34,7 +34,7 @@ fn think(state: PlayState, board: &Board) {
     let Some(mv) = report.best else {
         return;
     };
-    if board_to_answer(state).as_ref() == Some(board) {
+    if game_to_answer(state).as_ref() == Some(game) {
         state.game.update(|g| {
             let _ = g.play(mv);
         });
@@ -65,8 +65,8 @@ pub fn start(state: PlayState) {
     Effect::new(move |_| state.eval.set(shown_score(state)));
 
     Effect::new(move |_| {
-        if let Some(board) = board_to_answer(state) {
-            set_timeout(move || think(state, &board), PAINT_FIRST);
+        if let Some(game) = game_to_answer(state) {
+            set_timeout(move || think(state, &game), PAINT_FIRST);
         }
     });
 }

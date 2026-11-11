@@ -83,6 +83,20 @@ impl Bitboard {
         self.0.count_ones()
     }
 
+    /// The square with the lowest index in the set, or `None` if it is
+    /// empty.
+    #[must_use]
+    pub fn first(self) -> Option<Square> {
+        Square::new(u8::try_from(self.0.trailing_zeros()).ok()?)
+    }
+
+    /// The square with the highest index in the set, or `None` if it is
+    /// empty.
+    #[must_use]
+    pub fn last(self) -> Option<Square> {
+        Square::new(u8::try_from(self.0.checked_ilog2()?).ok()?)
+    }
+
     #[must_use]
     pub(crate) const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)

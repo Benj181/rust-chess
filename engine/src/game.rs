@@ -6,6 +6,7 @@ pub use result::{DrawReason, GameResult, MoveError, WinReason};
 
 use crate::{
     board::Board,
+    search::{Limits, Report, search_after},
     types::{Bitboard, Color, Move, MoveList, PieceKind, Square},
 };
 use std::cmp::Ordering;
@@ -113,6 +114,24 @@ impl Game {
                 .board
                 .piece_at(sq)
                 .is_some_and(|piece| piece.color() == self.board.side_to_move())
+    }
+
+    /// Searches the current position for the best move, like
+    /// [`search`](crate::search::search), but knowing the positions the game
+    /// has been through: repeating one of them counts as a draw, so the
+    /// search avoids repetitions when it is ahead and looks for them when
+    /// it is behind.
+    ///
+    /// ```
+    /// use engine::{search::Limits, Game};
+    ///
+    /// let report = Game::new().search(Limits { depth: 3, nodes: 10_000 });
+    /// assert!(report.best.is_some());
+    /// ```
+    #[must_use]
+    pub fn search(&self, limits: Limits) -> Report {
+        let earlier = self.history.iter().map(Board::zobrist).collect();
+        search_after(&self.board, earlier, limits)
     }
 
     /// Plays `mv` and updates the result.

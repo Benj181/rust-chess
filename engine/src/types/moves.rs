@@ -215,6 +215,14 @@ impl MoveList {
         }
     }
 
+    /// Swaps the moves at positions `a` and `b`. Does nothing if either is
+    /// past the end of the list.
+    pub const fn swap(&mut self, a: usize, b: usize) {
+        if a < self.len && b < self.len {
+            self.moves.swap(a, b);
+        }
+    }
+
     /// The number of moves in the list.
     #[must_use]
     pub const fn len(&self) -> usize {

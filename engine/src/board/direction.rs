@@ -27,6 +27,43 @@ impl Direction {
         Self::SouthWest,
     ];
 
+    /// All eight directions.
+    pub const ALL: [Self; 8] = [
+        Self::North,
+        Self::South,
+        Self::East,
+        Self::West,
+        Self::NorthEast,
+        Self::NorthWest,
+        Self::SouthEast,
+        Self::SouthWest,
+    ];
+
+    /// The position of this direction in [`ALL`](Self::ALL).
+    #[must_use]
+    pub const fn index(self) -> usize {
+        match self {
+            Self::North => 0,
+            Self::South => 1,
+            Self::East => 2,
+            Self::West => 3,
+            Self::NorthEast => 4,
+            Self::NorthWest => 5,
+            Self::SouthEast => 6,
+            Self::SouthWest => 7,
+        }
+    }
+
+    /// Whether a step in this direction leads to a square with a higher
+    /// index.
+    #[must_use]
+    pub const fn is_ascending(self) -> bool {
+        matches!(
+            self,
+            Self::North | Self::East | Self::NorthEast | Self::NorthWest
+        )
+    }
+
     /// Every square of `bb` moved one step in this direction. Squares that
     /// would leave the board are dropped.
     #[must_use]

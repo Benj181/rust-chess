@@ -2,11 +2,16 @@
 //!
 //! An attack set includes squares holding the attacker's own pieces. Move
 //! generation removes those.
+//!
+//! Sliding pieces use a table of rays, built on first use: the squares in
+//! one direction from a square on an empty board. A ray is cut off behind
+//! the nearest blocker by removing that blocker's own ray.
 
 use crate::{
     board::direction::Direction,
     types::{Bitboard, Color, Square},
 };
+use std::{array, sync::LazyLock};
 
 /// The squares a knight on `sq` attacks.
 #[must_use]
@@ -39,17 +44,41 @@ pub const fn pawn_attacks(color: Color, pawns: Bitboard) -> Bitboard {
     }
 }
 
+static RAYS: LazyLock<[[Bitboard; 64]; 8]> =
+    LazyLock::new(|| Direction::ALL.map(|dir| array::from_fn(|index| ray_from(dir, index))));
+
+fn ray_from(dir: Direction, index: usize) -> Bitboard {
+    let Some(sq) = u8::try_from(index).ok().and_then(Square::new) else {
+        return Bitboard::EMPTY;
+    };
+    let mut ray = Bitboard::EMPTY;
+    let mut reached = Bitboard::from_square(sq);
+    for _ in 0..dir.steps_to_edge(sq) {
+        reached = dir.step(reached);
+        ray |= reached;
+    }
+    ray
+}
+
+fn ray(dir: Direction, sq: Square) -> Bitboard {
+    RAYS.get(dir.index())
+        .and_then(|rays| rays.get(usize::from(sq.index())))
+        .copied()
+        .unwrap_or(Bitboard::EMPTY)
+}
+
 fn sliding_attacks(sq: Square, occupied: Bitboard, dirs: &[Direction]) -> Bitboard {
     let mut attacks = Bitboard::EMPTY;
     for &dir in dirs {
-        let mut reached = Bitboard::from_square(sq);
-        for _ in 0..dir.steps_to_edge(sq) {
-            reached = dir.step(reached);
-            attacks |= reached;
-            if !(reached & occupied).is_empty() {
-                break;
-            }
-        }
+        let open = ray(dir, sq);
+        let blockers = open & occupied;
+        let nearest = if dir.is_ascending() {
+            blockers.first()
+        } else {
+            blockers.last()
+        };
+        let hidden = nearest.map_or(Bitboard::EMPTY, |blocker| ray(dir, blocker));
+        attacks |= open ^ hidden;
     }
     attacks
 }
