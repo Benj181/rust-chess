@@ -294,8 +294,23 @@ is private inside `search`, and its doc example lives on `negamax`):
     returns early when it is the AI's turn. Action bar: a chip icon button
     (`icons::COMPUTER`, `button.on` = accent colour); take back undoes two
     plies against the AI; resign resigns the human's side.
-- Possible next: a "thinking" status line, repetition in the search,
-  difficulty levels (just other `Limits`).
+  - `think` times the search with `js_sys::Date::now()` (`Instant`
+    panics in the browser) and logs depth, nodes and ms to the console
+    via `leptos::logging::log!` (`js-sys` is an `app` dependency).
+- Eval bar (written by Claude on request): `PlayState.eval: RwSignal<i32>`
+  (centipawns, White's view). A second `Effect` in `ai::start` sets it
+  from `shown_score`: 0 if the live game is drawn, else `search` of
+  `shown` with `EVAL_LIMITS` (30k nodes, about 10 ms), sign flipped when
+  Black is to move. `components/eval_bar.rs`: `EvalBar` maps the score
+  with `100 / (1 + e^(-0.00368 cp))` (Lichess-like curve, mate = 100%)
+  to `style:height` of `.eval-white`; `class:flipped` when the
+  perspective is Black puts White's part on top. CSS: `.eval-bar` sits on
+  the left frame line (`top/bottom: 14px`, `left: 0`,
+  `translateX(-50%)`, 6px wide, accent border, `--bg` inside, accent
+  fill, `transition: height 0.3s`).
+- Possible next: show the search stats in the moves pane (a signal set
+  by `think`), a "thinking" status line, repetition in the search,
+  difficulty levels (just other `Limits`), the eval number on the bar.
 
 The board is playable by clicking, with highlights.
 

@@ -82,6 +82,30 @@ button:disabled {
 .frame-label.top    { top: 0;    transform: translateY(-50%); color: var(--text); }
 .frame-label.bottom { bottom: 0; transform: translateY(50%);  color: var(--dim); }
 
+.eval-bar {
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    left: 0;
+    width: 6px;
+    transform: translateX(-50%);
+    overflow: hidden;
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+}
+.eval-white {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: var(--accent);
+    transition: height 0.3s;
+}
+.eval-bar.flipped .eval-white {
+    top: 0;
+    bottom: auto;
+}
+
 .material {
     position: absolute;
     right: 12px;

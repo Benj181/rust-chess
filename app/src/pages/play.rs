@@ -1,4 +1,5 @@
 use crate::components::board::ChessBoard;
+use crate::components::eval_bar::EvalBar;
 use crate::components::material::MaterialStrip;
 use crate::components::move_list::MoveList;
 use crate::state::PlayState;
@@ -47,6 +48,7 @@ pub fn PlayPage() -> impl IntoView {
             <div class="board-frame">
                 <span class="frame-label top">"rust-chess"</span>
                 <ChessBoard />
+                <EvalBar />
                 <MaterialStrip at_top=true />
                 <MaterialStrip at_top=false />
                 <span class="frame-label bottom">{move || state.game.with(status_text)}</span>
