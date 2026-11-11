@@ -150,24 +150,29 @@ pub fn is_loud(kind: MoveKind) -> bool {
     kind.is_capture() || kind.promotion() == Some(PieceKind::Queen)
 }
 
-fn tactical_guess(board: &Board, mv: Move) -> i32 {
+/// The material a capture or promotion wins at once, before any recapture:
+/// the piece taken plus what a promoted pawn turns into.
+pub fn material_gain(board: &Board, mv: Move) -> i32 {
     let kind = mv.kind();
-    let value_at = |sq| {
-        board
-            .piece_at(sq)
-            .map_or(0, |piece| material_value(piece.kind()))
-    };
-
     let victim = match kind {
         MoveKind::EnPassant => material_value(PieceKind::Pawn),
-        _ if kind.is_capture() => value_at(mv.to()),
+        _ if kind.is_capture() => board
+            .piece_at(mv.to())
+            .map_or(0, |piece| material_value(piece.kind())),
         _ => 0,
     };
-    let promotion = kind.promotion().map_or(0, material_value);
-    let attacker = value_at(mv.from()) / 10;
+    let promotion = kind.promotion().map_or(0, |promoted| {
+        material_value(promoted).saturating_sub(material_value(PieceKind::Pawn))
+    });
+    victim.saturating_add(promotion)
+}
+
+fn tactical_guess(board: &Board, mv: Move) -> i32 {
+    let attacker = board
+        .piece_at(mv.from())
+        .map_or(0, |piece| material_value(piece.kind()));
 
     TACTICAL
-        .saturating_add(victim)
-        .saturating_add(promotion)
-        .saturating_sub(attacker)
+        .saturating_add(material_gain(board, mv))
+        .saturating_sub(attacker / 10)
 }

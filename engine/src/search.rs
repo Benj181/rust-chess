@@ -5,6 +5,7 @@
 //! iterative deepening and a transposition table.
 
 mod eval;
+mod exchange;
 mod ordering;
 mod tt;
 
@@ -12,7 +13,8 @@ use crate::{
     board::Board,
     search::{
         eval::evaluate,
-        ordering::{History, Killers, is_loud, ordered_captures, ordered_moves},
+        exchange::loses_material,
+        ordering::{History, Killers, is_loud, material_gain, ordered_captures, ordered_moves},
         tt::{Bound, Entry, Table},
     },
     types::{Move, PieceKind},
@@ -24,6 +26,12 @@ const INFINITY: i32 = 1_000_000;
 const MAX_PLY: usize = 128;
 const NULL_MOVE_MIN_DEPTH: u32 = 3;
 const NULL_MOVE_REDUCTION: u32 = 3;
+const FUTILITY_MAX_DEPTH: u32 = 6;
+const FUTILITY_MARGIN: i32 = 100;
+const DELTA_MARGIN: i32 = 200;
+const ASPIRATION_MIN_DEPTH: u32 = 4;
+const ASPIRATION_MARGIN: i32 = 40;
+const ASPIRATION_GROWTH: i32 = 4;
 const REDUCE_MIN_DEPTH: u32 = 3;
 const REDUCE_AFTER: u32 = 3;
 const REDUCE_MORE_AFTER: u32 = 8;
@@ -101,7 +109,7 @@ pub(crate) fn search_after(board: &Board, earlier: Vec<u64>, limits: Limits) -> 
     };
 
     for depth in 1..=limits.depth {
-        let score = searcher.negamax(board, depth, 0, -INFINITY, INFINITY, false);
+        let score = searcher.search_root(board, depth, report.score);
         if searcher.stopped {
             break;
         }
@@ -145,6 +153,23 @@ impl Searcher {
         self.stopped
     }
 
+    fn search_root(&mut self, board: &Board, depth: u32, expected: i32) -> i32 {
+        let mut margin = if depth >= ASPIRATION_MIN_DEPTH {
+            ASPIRATION_MARGIN
+        } else {
+            INFINITY
+        };
+        loop {
+            let alpha = expected.saturating_sub(margin).max(-INFINITY);
+            let beta = expected.saturating_add(margin).min(INFINITY);
+            let score = self.negamax(board, depth, 0, alpha, beta, false);
+            if self.stopped || (score > alpha && score < beta) {
+                return score;
+            }
+            margin = margin.saturating_mul(ASPIRATION_GROWTH);
+        }
+    }
+
     fn killers_at(&self, ply: i32) -> Killers {
         usize::try_from(ply)
             .ok()
@@ -181,12 +206,16 @@ impl Searcher {
             || self.is_repetition(board, key)
     }
 
-    fn passing_is_enough(&mut self, node: &Node, beta: i32) -> bool {
-        if node.depth < NULL_MOVE_MIN_DEPTH
-            || !has_pieces(node.board)
-            || evaluate(node.board) < beta
-        {
-            return false;
+    fn cutoff_without_moves(&mut self, node: &Node, beta: i32) -> Option<i32> {
+        let standing = evaluate(node.board);
+        let depth = i32::try_from(node.depth).unwrap_or(i32::MAX);
+        let margin = FUTILITY_MARGIN.saturating_mul(depth);
+        if node.depth <= FUTILITY_MAX_DEPTH && standing.saturating_sub(margin) >= beta {
+            return Some(standing);
+        }
+
+        if node.depth < NULL_MOVE_MIN_DEPTH || !has_pieces(node.board) || standing < beta {
+            return None;
         }
         let score = self
             .negamax(
@@ -198,7 +227,7 @@ impl Searcher {
                 false,
             )
             .saturating_neg();
-        !self.stopped && score >= beta
+        (!self.stopped && score >= beta).then_some(beta)
     }
 
     fn reply(&mut self, child: &Board, depth: u32, ply: i32, alpha: i32, beta: i32) -> i32 {
@@ -280,9 +309,9 @@ impl Searcher {
             && may_pass
             && !in_check
             && beta.abs() < MATE_BOUND
-            && self.passing_is_enough(&node, beta)
+            && let Some(score) = self.cutoff_without_moves(&node, beta)
         {
-            return beta;
+            return score;
         }
         if self.stopped {
             return 0;
@@ -380,13 +409,20 @@ impl Searcher {
             return 0;
         }
 
-        let mut best = evaluate(board);
-        if best >= beta {
-            return best;
+        let standing = evaluate(board);
+        if standing >= beta {
+            return standing;
         }
-        alpha = alpha.max(best);
+        alpha = alpha.max(standing);
+        let mut best = standing;
 
         for mv in ordered_captures(board) {
+            let hoped = standing
+                .saturating_add(material_gain(board, mv))
+                .saturating_add(DELTA_MARGIN);
+            if hoped <= alpha || loses_material(board, mv) {
+                continue;
+            }
             let Some(child) = board.try_move(mv) else {
                 continue;
             };
