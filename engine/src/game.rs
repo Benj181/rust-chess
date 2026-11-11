@@ -3,6 +3,7 @@
 use crate::{
     board::Board,
     movegen::generate_legal,
+    notation::uci::parse_uci,
     types::{Bitboard, Color, Move, MoveList, PieceKind, Square},
 };
 use std::{cmp::Ordering, fmt};
@@ -226,7 +227,7 @@ impl Game {
         if self.result.is_some() {
             return Err(MoveError::GameOver);
         }
-        let (from, to, promo) = Self::parse_uci(s).ok_or(MoveError::InvalidNotation)?;
+        let (from, to, promo) = parse_uci(s).ok_or(MoveError::InvalidNotation)?;
         let mv = self
             .find_move(from, to, promo)
             .ok_or(MoveError::IllegalMove)?;
@@ -316,20 +317,6 @@ impl Game {
             .iter()
             .filter(|earlier| earlier.same_position(&self.board))
             .count()
-    }
-
-    fn parse_uci(s: &str) -> Option<(Square, Square, Option<PieceKind>)> {
-        let from = Square::from_algebraic(s.get(..2)?)?;
-        let to = Square::from_algebraic(s.get(2..4)?)?;
-        let promo = match s.get(4..)? {
-            "" => None,
-            "n" => Some(PieceKind::Knight),
-            "b" => Some(PieceKind::Bishop),
-            "r" => Some(PieceKind::Rook),
-            "q" => Some(PieceKind::Queen),
-            _ => return None,
-        };
-        Some((from, to, promo))
     }
 
     const fn finish(&mut self, result: GameResult) -> Result<(), MoveError> {

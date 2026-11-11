@@ -23,48 +23,6 @@ impl CastlingRights {
     /// Black may castle queen side.
     pub const BLACK_QUEEN: Self = Self(0b1000);
 
-    /// Parses the castling field of a FEN string: `-`, or any combination of
-    /// `K`, `Q`, `k` and `q`. Returns `None` for any other character.
-    #[must_use]
-    pub fn from_fen(s: &str) -> Option<Self> {
-        let mut rights = Self::NONE;
-        if s == "-" {
-            return Some(rights);
-        }
-        for c in s.chars() {
-            let right = match c {
-                'K' => Self::WHITE_KING,
-                'Q' => Self::WHITE_QUEEN,
-                'k' => Self::BLACK_KING,
-                'q' => Self::BLACK_QUEEN,
-                _ => return None,
-            };
-            rights.insert(right);
-        }
-        Some(rights)
-    }
-
-    /// Formats the rights as the castling field of a FEN string, in the order
-    /// `KQkq`, or `-` if no side may castle.
-    #[must_use]
-    pub fn to_fen(self) -> String {
-        let field: String = [
-            (Self::WHITE_KING, 'K'),
-            (Self::WHITE_QUEEN, 'Q'),
-            (Self::BLACK_KING, 'k'),
-            (Self::BLACK_QUEEN, 'q'),
-        ]
-        .into_iter()
-        .filter(|&(right, _)| self.contains(right))
-        .map(|(_, symbol)| symbol)
-        .collect();
-        if field.is_empty() {
-            "-".to_owned()
-        } else {
-            field
-        }
-    }
-
     /// Whether every right in `right` is present.
     #[must_use]
     pub const fn contains(self, right: Self) -> bool {

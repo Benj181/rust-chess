@@ -163,7 +163,7 @@ impl Iterator for Squares {
     type Item = Square;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let bits = &mut self.0 .0;
+        let bits = &mut self.0.0;
         if *bits == 0 {
             return None;
         }

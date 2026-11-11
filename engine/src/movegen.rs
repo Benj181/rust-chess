@@ -5,11 +5,13 @@
 //! those that do not leave the mover's own king attacked.
 
 use crate::{
-    board::{attacks::{
-        bishop_attacks, king_attacks, knight_attacks, pawn_attacks, queen_attacks, rook_attacks,
+    board::{
+        Board,
+        attacks::{
+            bishop_attacks, king_attacks, knight_attacks, pawn_attacks, queen_attacks, rook_attacks,
+        },
+        direction::Direction,
     },
-    Board,
-    direction::Direction},
     types::{Bitboard, Castle, Color, Move, MoveKind, MoveList, PieceKind, Square},
 };
 

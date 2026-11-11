@@ -22,7 +22,7 @@ mod board;
 mod eval;
 mod game;
 pub mod movegen;
-mod san;
+mod notation;
 pub mod search;
 mod types;
 
