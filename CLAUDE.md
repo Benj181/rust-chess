@@ -370,8 +370,11 @@ The board is playable by clicking, with highlights.
   - `ChessBoard(game, selected, perspective: RwSignal<Color>)`: a `move ||`
     closure renders `Square::reading_order(perspective.get())` as 64
     `BoardSquare`s, so a flip rebuilds the list.
-  - `click_square`: plays `find_move(from, sq, None)` or the queen promotion,
-    otherwise selects via `can_select`.
+  - `decide_click(&Game, selected, clicked) -> Click` is the honest half (no
+    signals): `Click::Play(Move)`, `Promote(from, to)` when only the
+    promotion move exists, or `Select(Option<Square>)` via `can_select`.
+    `click_square(state, sq)` is the thin half: the live / AI-to-move guard,
+    then a `match` that writes the signals.
 - `style/main.css`: 64px grid, design colours, dot via `.target::after`, ring
   via `.capture::after`, `color-mix` for last move and check.
 - Engine helpers added for the UI: `Square::is_dark`, `Square::reading_order(Color)`
@@ -390,6 +393,25 @@ lifting state up, CSS grid, `::after`, specificity, `color-mix`.
 Style the user likes: logic in named closures above the `view!`, the view
 itself a flat list of facts. Chess questions are answered by the engine, the
 UI only maps answers to classes and clicks. Keep state as low as possible.
+
+Honest functions (from Logan Smith's "How to write the perfect function",
+which the user wants to follow): a function only touches the world through
+its signature; decide in an honest function that returns data, act on it
+(signal writes, clock, log) in a thin caller at the top; signatures ask for
+exactly what they need; one level of abstraction per body. The engine
+already follows it. Review findings still open, in the order found:
+1. `start_drag` in `board.rs` repeats part of the click rule and misses the
+   `ai_to_move` check (the rest of finding 1, `decide_click`, is done).
+2. Rules inside click handlers in `move_list.rs`: "undo twice against the
+   AI" (`take_back`) and who resigns (`ResignButton`).
+3. `Board::make_move` accepts any `Move` but needs a legal one (judgement
+   call: trusted for search speed, `Game::play` is the checked door).
+4. Positional bool flags: `non_pawn_moves(.., quiet, ..)`,
+   `push_pawn_move(.., capture, ..)`, `negamax(.., may_pass)`.
+5. Mixed zoom levels: `to_fen` inlines the placement loop, `search_moves`
+   is long, `(b'a' + sq.file()) as char` instead of `file_char()`, and the
+   `mask` flip written twice in `board.rs`.
+`expect_context::<PlayState>()` in components is accepted as is.
 
 Gotchas:
 - If a change seems to have no effect in the browser, hard reload

@@ -1,5 +1,5 @@
 use crate::state::PlayState;
-use engine::{Color, Piece, PieceKind, Square};
+use engine::{Color, Game, Move, Piece, PieceKind, Square};
 use leptos::{ev, prelude::*};
 
 #[derive(Clone, Copy)]
@@ -28,27 +28,48 @@ pub fn PieceIcon(piece: Piece) -> impl IntoView {
     view! { <span class=class>{glyph(piece)}</span> }
 }
 
+enum Click {
+    Play(Move),
+    Promote(Square, Square),
+    Select(Option<Square>),
+}
+
+fn decide_click(game: &Game, selected: Option<Square>, clicked_square: Square) -> Click {
+    if let Some(from) = selected {
+        if let Some(mv) = game.find_move(from, clicked_square, None) {
+            return Click::Play(mv);
+        }
+        if game
+            .find_move(from, clicked_square, Some(PieceKind::Queen))
+            .is_some()
+        {
+            return Click::Promote(from, clicked_square);
+        }
+    }
+    Click::Select(game.can_select(clicked_square).then_some(clicked_square))
+}
+
 fn click_square(state: PlayState, sq: Square) {
     if !state.is_live() || state.ai_to_move() {
         return;
     }
-    let PlayState { game, selected, .. } = state;
-    if let Some(from) = selected.get() {
-        if let Some(mv) = game.with(|g| g.find_move(from, sq, None)) {
+    let PlayState {
+        game,
+        selected,
+        promoting,
+        ..
+    } = state;
+    let from = selected.get();
+    match game.with(|g| decide_click(g, from, sq)) {
+        Click::Play(mv) => {
             game.update(|g| {
                 let _ = g.play(mv);
             });
             selected.set(None);
-            return;
         }
-        if game.with(|g| g.find_move(from, sq, Some(PieceKind::Queen)).is_some()) {
-            state.promoting.set(Some((from, sq)));
-            return;
-        }
+        Click::Promote(from, to) => promoting.set(Some((from, to))),
+        Click::Select(square) => selected.set(square),
     }
-
-    let own = game.with(|g| g.can_select(sq));
-    selected.set(own.then_some(sq));
 }
 
 #[component]
@@ -73,12 +94,9 @@ fn BoardSquare(sq: Square, side: Color, drag: Drag) -> impl IntoView {
         last.get()
             .is_some_and(|mv| mv.from() == sq || mv.to() == sq)
     };
-    let is_check = move || {
-        board.with(|b| b.in_check() && b.king_square(b.side_to_move()) == Some(sq))
-    };
-    let piece = move || {
-        board.with(|b| b.piece_at(sq).map(|piece| view! { <PieceIcon piece /> }))
-    };
+    let is_check =
+        move || board.with(|b| b.in_check() && b.king_square(b.side_to_move()) == Some(sq));
+    let piece = move || board.with(|b| b.piece_at(sq).map(|piece| view! { <PieceIcon piece /> }));
 
     let on_click = move |_| click_square(state, sq);
     let start_drag = move |e: ev::PointerEvent| {
