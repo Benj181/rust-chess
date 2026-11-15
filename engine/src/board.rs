@@ -2,6 +2,7 @@
 
 pub mod attacks;
 pub mod direction;
+pub mod score;
 mod zobrist;
 
 use crate::{
@@ -15,7 +16,8 @@ use std::fmt;
 /// and both move clocks.
 ///
 /// Pieces are stored as six bitboards by kind and two by color, together
-/// with a running hash of where they stand (see [`zobrist`](Self::zobrist)).
+/// with a running hash of where they stand (see [`zobrist`](Self::zobrist))
+/// and a running score of what they are worth there.
 /// A board never changes from the outside: [`make_move`](Self::make_move)
 /// returns a new one.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -29,6 +31,7 @@ pub struct Board {
     white: Bitboard,
     black: Bitboard,
     placement_hash: u64,
+    score: i32,
     pub(crate) side_to_move: Color,
     pub(crate) castling: CastlingRights,
     pub(crate) en_passant: Option<Square>,
@@ -50,6 +53,7 @@ impl Board {
             white: Bitboard::EMPTY,
             black: Bitboard::EMPTY,
             placement_hash: 0,
+            score: 0,
             side_to_move: Color::White,
             castling: CastlingRights::NONE,
             en_passant: None,
@@ -152,6 +156,7 @@ impl Board {
 
     pub(crate) fn put(&mut self, piece: Piece, sq: Square) {
         self.placement_hash ^= zobrist::piece_key(piece, sq);
+        self.score = self.score.saturating_add(score::piece_score(piece, sq));
         self.pieces_mut(piece.kind()).set(sq);
         match piece.color() {
             Color::White => self.white.set(sq),
@@ -161,6 +166,7 @@ impl Board {
 
     pub(crate) fn remove(&mut self, piece: Piece, sq: Square) {
         self.placement_hash ^= zobrist::piece_key(piece, sq);
+        self.score = self.score.saturating_sub(score::piece_score(piece, sq));
         self.pieces_mut(piece.kind()).clear(sq);
         match piece.color() {
             Color::White => self.white.clear(sq),

@@ -2,9 +2,8 @@
 //! cut off the rest sooner.
 
 use crate::{
-    board::Board,
+    board::{Board, score::material_value},
     movegen::{generate_pseudo_legal, generate_pseudo_legal_captures},
-    search::eval::material_value,
     types::{Color, Move, MoveKind, MoveList, PieceKind},
 };
 
